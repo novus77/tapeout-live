@@ -1,5 +1,5 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main", "description": "Local monitor window",
-  "windows": ["main", "details"], "permissions": ["core:default"]
+  "windows": ["main"], "permissions": ["core:default"]
 }

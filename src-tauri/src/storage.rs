@@ -65,7 +65,11 @@ impl Store {
             .optional()
             .map_err(|e| e.to_string())?;
         value
-            .map(|v| serde_json::from_str(&v).map_err(|e| e.to_string()))
+            .map(|v| {
+                serde_json::from_str(&v)
+                    .map_err(|e| e.to_string())
+                    .and_then(crate::domain::canonical_settings)
+            })
             .unwrap_or_else(|| Ok(Settings::default()))
     }
     pub fn save_settings(&self, settings: &Settings) -> Result<(), String> {

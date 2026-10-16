@@ -1,5 +1,16 @@
 # Validation record
 
+## v0.2 iteration
+
+- Five new Rust regressions cover legacy-wallet migration, invalid/duplicate accounts, negative monitor origins, fixed dimensions on small work areas, and 1×/1.5×/2× Windows scale conversion.
+- Frontend integration tests cover Network-before-Overview ordering, absence of tabs/links/footer controls/BSC badge, account and locale switching, and immediate removal of the old wallet's metrics while a native selection command is pending.
+- Both locale dictionaries have matching keys and non-empty translations. English task labels fall back to task IDs when the provider supplies only Chinese names.
+- Existing backend contract, alert, persistence, recovery, and wallet-generation regressions remain required.
+- A separate `io.tapeout.live.preview` debug application was built/launched for native checking. The installed application and its settings were not overwritten. Native computer-use attachment timed out; cross-display visual validation is therefore **not established** by this run. Keep it as an explicit manual acceptance gate.
+- Expected hardware acceptance: open the tray on each monitor, confirm 420 × 720 logical points and no horizontal scrollbar, repeat Retina/non-Retina transitions, and confirm both Chinese/English layouts and account selection.
+
+The historical record below describes v0.1 checks and limitations, not additional v0.2 native verification.
+
 Date: 2026-10-16
 
 ## Completed locally

@@ -1,5 +1,7 @@
 # TapeOut Monitor Desktop Specification
 
+> The UI, window geometry, and account scope are superseded by [the v0.2 iteration specification](specs/2026-10-16-unified-panel-v2.md). Retain the provider contract and data-integrity requirements unless that specification explicitly replaces them.
+
 Status: Proposed for review  
 Date: 2026-10-16  
 Platforms: Windows 11 x64; macOS 13+ Apple Silicon and Intel  

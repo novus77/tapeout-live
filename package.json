@@ -1,6 +1,6 @@
 {
   "name": "tapeout-live",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -22,9 +22,11 @@
   "devDependencies": {
     "@eslint/js": "^9.0.0",
     "@tauri-apps/cli": "^2.8.0",
+    "@testing-library/react": "^16.3.3",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^4.7.0",
+    "jsdom": "^29.1.1",
     "prettier": "^3.9.10",
     "typescript": "~5.9.2",
     "typescript-eslint": "^8.0.0",
