@@ -5,16 +5,57 @@ use std::path::Path;
 
 pub struct Store {
     connection: Connection,
+    settings_backup: std::path::PathBuf,
 }
 impl Store {
+    pub fn open_with_recovery(path: &Path) -> Result<Self, String> {
+        match Self::open(path) {
+            Ok(store) => Ok(store),
+            Err(error)
+                if error.contains("not a database")
+                    || error.contains("malformed")
+                    || error.starts_with("Integrity check failed:") =>
+            {
+                let stamp = chrono::Utc::now().timestamp_millis();
+                for suffix in ["", "-wal", "-shm"] {
+                    let source = std::path::PathBuf::from(format!("{}{suffix}", path.display()));
+                    if source.exists() {
+                        std::fs::rename(
+                            &source,
+                            format!("{}.quarantine-{stamp}{suffix}", path.display()),
+                        )
+                        .map_err(|e| e.to_string())?;
+                    }
+                }
+                let store = Self::open(path)?;
+                if let Ok(bytes) = std::fs::read(path.with_extension("settings.json")) {
+                    if let Ok(settings) = serde_json::from_slice::<Settings>(&bytes) {
+                        crate::domain::validate_settings(&settings)?;
+                        store.save_settings(&settings)?;
+                    }
+                }
+                Ok(store)
+            }
+            Err(error) => Err(error),
+        }
+    }
     pub fn open(path: &Path) -> Result<Self, String> {
         let connection = Connection::open(path).map_err(|e| e.to_string())?;
+        let integrity: String = connection
+            .query_row("PRAGMA quick_check", [], |r| r.get(0))
+            .map_err(|e| e.to_string())?;
+        if integrity != "ok" {
+            return Err(format!("Integrity check failed: {integrity}"));
+        }
         connection
             .busy_timeout(std::time::Duration::from_secs(5))
             .map_err(|e| e.to_string())?;
         connection.execute_batch("PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS settings(id INTEGER PRIMARY KEY CHECK(id=1), payload TEXT NOT NULL); CREATE TABLE IF NOT EXISTS snapshots(resource TEXT NOT NULL,wallet TEXT NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(resource,wallet)); CREATE TABLE IF NOT EXISTS samples(resource TEXT NOT NULL,wallet TEXT NOT NULL,metric TEXT NOT NULL,bucket INTEGER NOT NULL,value TEXT NOT NULL,source_time TEXT NOT NULL,PRIMARY KEY(resource,wallet,metric,bucket)); PRAGMA user_version=1;").map_err(|e| e.to_string())?;
         connection.execute_batch("CREATE TABLE IF NOT EXISTS event_baselines(wallet TEXT NOT NULL,event_id TEXT NOT NULL,seen_at INTEGER NOT NULL,PRIMARY KEY(wallet,event_id));").map_err(|e|e.to_string())?;
-        Ok(Self { connection })
+        Ok(Self {
+            connection,
+            settings_backup: path.with_extension("settings.json"),
+        })
     }
     pub fn settings(&self) -> Result<Settings, String> {
         use rusqlite::OptionalExtension;
@@ -28,6 +69,9 @@ impl Store {
             .unwrap_or_else(|| Ok(Settings::default()))
     }
     pub fn save_settings(&self, settings: &Settings) -> Result<(), String> {
+        // Keep a separate, validated copy so a damaged history DB does not lose wallet preferences.
+        let payload = serde_json::to_vec(settings).map_err(|e| e.to_string())?;
+        std::fs::write(&self.settings_backup, payload).map_err(|e| e.to_string())?;
         self.connection
             .execute(
                 "INSERT OR REPLACE INTO settings VALUES(1,?1)",

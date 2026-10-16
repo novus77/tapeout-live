@@ -1,5 +1,45 @@
 use serde_json::json;
 use tapeout_live::{domain::normalize, storage::Store};
+
+#[test]
+fn corrupt_cache_is_quarantined_without_losing_settings() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("monitor.sqlite");
+    let store = Store::open(&path).unwrap();
+    store
+        .save_settings(&tapeout_live::domain::Settings {
+            alias: "Saved wallet".into(),
+            ..Default::default()
+        })
+        .unwrap();
+    drop(store);
+    std::fs::write(&path, b"corrupt sqlite data").unwrap();
+    let recovered = Store::open_with_recovery(&path).unwrap();
+    assert_eq!(recovered.settings().unwrap().alias, "Saved wallet");
+    assert!(std::fs::read_dir(dir.path())
+        .unwrap()
+        .filter_map(Result::ok)
+        .any(|e| e.file_name().to_string_lossy().contains("quarantine")));
+}
+
+#[test]
+fn event_deduplication_persists_across_restart() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("monitor.sqlite");
+    let mut store = Store::open(&path).unwrap();
+    let events = vec![("operation:1".into(), "Optimal position lost".into())];
+    assert_eq!(store.unseen_events("wallet-a", &events).unwrap().len(), 1);
+    drop(store);
+    let mut reopened = Store::open(&path).unwrap();
+    assert!(reopened
+        .unseen_events("wallet-a", &events)
+        .unwrap()
+        .is_empty());
+    assert_eq!(
+        reopened.unseen_events("wallet-b", &events).unwrap().len(),
+        1
+    );
+}
 #[test]
 fn cache_rejects_older_blocks_and_survives_restart() {
     let dir = tempfile::tempdir().unwrap();

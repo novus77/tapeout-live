@@ -5,7 +5,8 @@ Date: 2026-10-16
 ## Completed locally
 
 - React/TypeScript production build, ESLint, and three frontend data-semantics tests.
-- Rust data contract tests (six), notification rule tests (two), and SQLite persistence tests (two).
+- Rust data contract tests (six), notification rule tests (two), and SQLite persistence/recovery/deduplication tests (four).
+- Runtime regression tests for fractional power drops and wallet-switch alert baselines (two).
 - Rust clippy with warnings denied and rustfmt.
 - Live, unauthenticated TapeOutScan address and market contract test using a public sample wallet. The sample is never configured as the user's wallet.
 - macOS Apple Silicon application bundle built successfully (approximately 15.3 MiB before signing).
@@ -32,6 +33,6 @@ GitHub Actions builds and tests on macOS and Windows. A successful CI build veri
 - Grouped circuit power is not multiplied or guessed; individual circuit breakdowns are shown only for a complete ungrouped collection.
 - Browser preview is layout-only. All live monitoring runs in the native Rust process.
 - No remote release is published and automatic updates are not enabled.
-- The initial database schema is versioned. Automatic corrupt-database quarantine/recovery is not implemented; a startup storage error is surfaced instead of silently discarding data.
+- The initial database schema is versioned. A corrupt database is quarantined in the same data directory, preserving the original bytes; a separate validated settings backup restores wallet preferences. Unrelated permission/I/O errors do not trigger quarantine.
 
 This is an initial development build. The manual device and release checks above remain distinct from automated build success.

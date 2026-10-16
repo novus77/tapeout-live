@@ -183,7 +183,8 @@ pub fn run() {
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
             let path = app.path().app_data_dir()?;
             std::fs::create_dir_all(&path)?;
-            let store = Store::open(&path.join("monitor.sqlite")).map_err(std::io::Error::other)?;
+            let store = Store::open_with_recovery(&path.join("monitor.sqlite"))
+                .map_err(std::io::Error::other)?;
             let engine = Arc::new(Mutex::new(
                 runtime::Engine::new(store).map_err(std::io::Error::other)?,
             ));

@@ -35,7 +35,7 @@ pub struct Engine {
     pub jobs: HashMap<String, Job>,
     pub network_visible: bool,
     baseline: Option<Snapshot>,
-    pending_alert: Option<String>,
+    pending_alert: Option<(f64, String)>,
     last_notification: i64,
     pub last_tick: i64,
 }
@@ -97,21 +97,20 @@ impl Engine {
             return Some(messages.into_iter().take(3).collect::<Vec<_>>().join("\n"));
         }
         let reason = if crate::alerts::power_drop(before, after, self.settings.power_drop) {
-            Some(format!(
-                "Mining power change observed: {:.0} H → {:.0} H",
-                before, after
+            Some((
+                after,
+                format!(
+                    "Mining power change observed: {:.0} H → {:.0} H",
+                    before, after
+                ),
             ))
         } else {
             None
         };
-        // Keep the original baseline until a second fresh observation confirms the drop.
-        if let Some(pending) = self.pending_alert.clone() {
-            let original = pending
-                .split(" → ")
-                .last()
-                .and_then(|s| s.trim_end_matches(" H").parse::<f64>().ok());
+        // Compare numeric observations, never the rounded notification label.
+        if let Some((target, pending)) = self.pending_alert.clone() {
             self.pending_alert = None;
-            if original.is_some_and(|v| after <= v) && now - self.last_notification >= 300 {
+            if after <= target && now - self.last_notification >= 300 {
                 self.last_notification = now;
                 return Some(pending);
             }
@@ -281,4 +280,34 @@ pub fn refresh(
         }
         let _ = app.emit("snapshot_updated", ());
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    fn snapshot(power: f64) -> Snapshot {
+        crate::domain::normalize("address",json!({"generatedAt":Utc::now().to_rfc3339(),"data":{"summary":{"miner_count":0,"total_hashrate":power},"circuits":[]}}),None).unwrap()
+    }
+    #[test]
+    fn fractional_drop_requires_two_observations_without_rounding() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut engine =
+            Engine::new(Store::open(&dir.path().join("cache.sqlite")).unwrap()).unwrap();
+        engine.settings.notifications = true;
+        assert!(engine.alert(&snapshot(100.0)).is_none());
+        assert!(engine.alert(&snapshot(89.4)).is_none());
+        assert!(engine.alert(&snapshot(89.4)).is_some());
+    }
+    #[test]
+    fn wallet_switch_clears_alert_baselines_and_changes_generation() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut engine =
+            Engine::new(Store::open(&dir.path().join("cache.sqlite")).unwrap()).unwrap();
+        engine.settings.notifications = true;
+        engine.alert(&snapshot(100.0));
+        engine.alert(&snapshot(80.0));
+        engine.reset_wallet();
+        assert_eq!(engine.generation, 1);
+        assert!(engine.alert(&snapshot(80.0)).is_none());
+    }
 }

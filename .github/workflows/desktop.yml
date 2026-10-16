@@ -13,7 +13,7 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            args: --bundles app
+            args: --bundles dmg
           - os: windows-latest
             args: --bundles nsis
     runs-on: ${{ matrix.os }}
@@ -42,7 +42,7 @@ jobs:
         with:
           name: tapeout-live-${{ matrix.os }}
           path: |
-            src-tauri/target/release/bundle/macos/*.app
+            src-tauri/target/release/bundle/dmg/*.dmg
             src-tauri/target/release/bundle/nsis/*.exe
           if-no-files-found: error
           retention-days: 7
