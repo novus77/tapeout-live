@@ -29,31 +29,32 @@
 
 ## 下载安装包
 
-**目前尚未发布正式 Release。** 当前可从 GitHub Actions 获取测试安装包；这些构建不等同于已签名、公证的正式发行版。
+**v0.4.0 已正式发布**，打开 [Releases](https://github.com/novus77/tapeout-live/releases/tag/v0.4.0) 即可下载，无需从 Actions 查找测试产物。
 
-1. 打开 [Actions 构建页面](https://github.com/novus77/tapeout-live/actions/workflows/desktop.yml)。
-2. 选择 `main` 分支最近一次成功的构建，确认对应提交是需要安装的版本。
-3. 在页面底部的 **Artifacts** 下载对应系统的压缩包（通常需要登录 GitHub）：
-   - macOS：`tapeout-live-macos-latest`，解压后获取 `.dmg`。
-   - Windows：`tapeout-live-windows-latest`，解压后获取 `.exe` 安装程序。
+| 系统                              | 安装包                                                                                                        |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| macOS Apple Silicon（M 系列芯片） | [下载 DMG](https://github.com/novus77/tapeout-live/releases/download/v0.4.0/TapeOut.Live_0.4.0_aarch64.dmg)   |
+| Windows x64                       | [下载 EXE](https://github.com/novus77/tapeout-live/releases/download/v0.4.0/TapeOut.Live_0.4.0_x64-setup.exe) |
 
-构建产物只保留 **7 天**。如果产物已过期，需等待维护者重新构建，或按下方开发说明自行构建。以后正式安装包会放在 [Releases](https://github.com/novus77/tapeout-live/releases) 页面。
+本次没有提供 Intel Mac 安装包，DMG 不是通用架构包。Release 中的 `Source code` 是源码，不是安装程序。可使用同页的 `SHA256SUMS.txt` 校验下载完整性；校验和不能替代开发者签名。
+
+本版为正式 Release，但**尚未配置开发者正式代码签名及 macOS 公证**，系统仍可能阻止启动。开发测试版本也可从 [Actions](https://github.com/novus77/tapeout-live/actions/workflows/desktop.yml) 获取，其产物保留 7 天，不等同于正式发布版本。
 
 ### macOS 安装
 
-1. 使用 macOS 13 或更新系统，下载并解压 macOS 构建产物。
-2. 确认安装包架构与电脑一致：Apple Silicon 使用 `aarch64` / `arm64`，Intel 使用 `x64` / `x86_64`。当前 CI 只构建其运行机器的原生架构，**不保证同时提供两种架构或通用包**。
+1. 使用 macOS 13 或更新系统，下载上方 DMG 安装包。
+2. 确认电脑为 Apple Silicon（M 系列芯片），使用 `aarch64` / `arm64` 安装包；Intel Mac 不能使用本次发布的 DMG。
 3. 打开 `.dmg`，将 **TapeOut Live.app** 拖入「应用程序」。
 4. 从「应用程序」启动 **TapeOut Live**，点击屏幕顶部菜单栏图标打开面板；它不是需要常驻 Dock 的普通窗口。
 
-测试构建尚未配置正式签名 / 公证，系统可能阻止启动。遇到安全提示时先停止安装并核实来源，或等待正式签名版本；不要关闭系统安全保护或运行来历不明的解除限制命令。
+本版尚未配置正式签名 / 公证，系统可能阻止启动。遇到安全提示时先停止安装并核实来源，或等待正式签名版本；不要关闭系统安全保护或运行来历不明的解除限制命令。
 
 更新时先通过菜单栏图标右键菜单退出应用，再用新版替换「应用程序」中的旧版。账户和偏好保存在独立的应用数据目录，正常替换应用不会删除这些数据，重要配置仍建议先备份。
 
 ### Windows 安装
 
 1. 初始支持目标为 **Windows 11 x64**；其他系统版本 / 架构尚未完成设备兼容性验证。
-2. 下载并解压 Windows 构建产物，运行其中的 `.exe` 安装程序，按提示完成安装。当前为当前用户安装模式。
+2. 下载上方 EXE 安装包，运行并按提示完成安装。当前为当前用户安装模式。
 3. 如果安装程序提示缺少 **Microsoft Edge WebView2 Runtime**，请使用微软官方来源提供的运行时，并按提示安装。
 4. 从开始菜单启动 **TapeOut Live**，在任务栏通知区域点击图标打开面板。如果看不到图标，请检查通知区域的隐藏图标列表。
 
