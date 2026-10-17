@@ -201,7 +201,7 @@ code {
 }
 main {
   flex: 1;
-  padding: 16px 18px;
+  padding: 12px 18px;
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: thin;
@@ -216,7 +216,7 @@ section {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 11px;
+  margin-bottom: 8px;
 }
 h2 {
   font-size: 13px;
@@ -323,8 +323,8 @@ h2 {
 .wallet-section,
 .power-history {
   border-top: 1px solid var(--line);
-  margin-top: 13px;
-  padding-top: 13px;
+  margin-top: 10px;
+  padding-top: 8px;
 }
 .account-selector {
   font-size: 10px;
@@ -357,11 +357,14 @@ h2 {
 .wallet-section .metric-number {
   font-size: clamp(18px, 6.2vw, 29px);
 }
+.metric-number.long-value {
+  font-size: 20px;
+}
 .balance-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 18px;
-  padding: 12px 1px 1px;
+  padding: 8px 1px 1px;
 }
 .balance-row > span {
   display: flex;
@@ -384,7 +387,7 @@ h2 {
   overflow-wrap: anywhere;
 }
 .chart {
-  height: 72px;
+  height: 60px;
   position: relative;
   color: var(--accent);
   background: linear-gradient(

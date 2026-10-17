@@ -55,14 +55,17 @@ export function Metric({
   accent?: boolean;
   digits?: number;
 }) {
+  const formatted = formatMetric(value, digits);
   return (
     <article className={`metric ${accent ? "accent" : ""}`}>
       <div className="metric-label">
         {icon}
         {title}
       </div>
-      <div className="metric-number">
-        {formatMetric(value, digits)}
+      <div
+        className={`metric-number ${formatted.length > 8 ? "long-value" : ""}`}
+      >
+        {formatted}
         {unit && <span>{unit}</span>}
       </div>
       {values && <Sparkline values={values} label={`${title} history`} />}

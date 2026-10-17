@@ -4,7 +4,7 @@ Scope: feature branch `codex/frosted-panel-v4`, PR #3, application version 0.4.0
 
 ## Automated evidence
 
-- Frontend: 26 passing tests in six suites, including existing account/project isolation regressions, settings order and mutations, appearance event ordering/cleanup, browser-only memory preview, and scoped 24-hour history.
+- Frontend: 27 passing tests in six suites, including existing account/project isolation regressions, settings order and mutations, appearance event ordering/cleanup, browser-only memory preview, long-metric typography without truncation, and scoped 24-hour history.
 - Rust: 37 passing deterministic tests; two public-network tests explicitly ignored. New coverage includes missing appearance fields, unknown themes, recovery backup, manual/system native policy, startup compensation, and SQLite write-failure recovery.
 - TypeScript, ESLint, Prettier, Vite production build, rustfmt, and clippy with `-D warnings` passed locally. Commands are listed in the implementation plan and PR.
 - The tests were developed red-first: theme fields/validation initially failed three assertions; missing native-theme policy failed compilation; settings-gear UI initially failed; selection-time history query failed its regression assertion; listener ordering and memory-preview tests failed before implementation; SQL trigger failure reproduced an incorrectly updated recovery backup before the storage correction.
@@ -18,6 +18,7 @@ Test URL: `http://127.0.0.1:1421/`. These are implementation screenshots, not th
 - Warm white and Smoke manual selection work. Following the current light system appearance disables manual buttons and resolves light; switching follow-system off restores the prior Smoke choice.
 - Two accounts were added via the actual inline form. Language and FAB switching preserve the current selected account.
 - English FAB overview headings are Network → My mining → Power history. FAB balance appears; no BNB balance or external links appear. No horizontal overflow in either measured view.
+- Final English FAB empty-history body measured 696 pixels including the 58-pixel browser-only notice: 638 pixels without that notice, within the native 660-pixel body. Spacing reserves room for the history-axis labels; ordinary long numeric metrics use compact typography without dropping digits. A 60-pixel chart preserves the approved hierarchy while accommodating the real-data freshness labels.
 - Browser console error log was empty during the recorded interactions.
 - The browser-only preview notice adds 58 pixels of vertical space, so its settings page can scroll slightly. Subtracting that preview-only notice, the measured two-account production content fits the 660-pixel body. This does not establish native accessibility text-scaling behavior.
 
@@ -41,7 +42,7 @@ Independent spec review and subsequent code-quality review completed. Addressed 
 - Native backdrop blur, reduced-transparency/high-contrast appearance, startup OS registration, startup-flash behavior, tray interactions, and icon legibility at actual menu-bar sizes remain **not visually verified**.
 - Real Windows and macOS mixed-DPI/multi-monitor hardware checks remain **not verified**. Geometry regressions and successful compilation do not replace them.
 - The production macOS application and `TapeOut Live_0.4.0_aarch64.dmg` built successfully. DMG creation initially failed inside the sandbox (`hdiutil: create failed - device not configured`); retrying with the required permission succeeded. This is a local development package, not a published/notarized release.
-- Mounted that DMG read-only, confirmed `Contents/Resources/licenses/PHOSPHOR-LICENSE.txt` and `icon.icns`, then detached it. SHA-256: `2588e04548d019914dc98e95612bc270209ef42c7324ba0fa0e5a6ef6c9cc21d`.
+- Mounted the first v0.4.0 DMG read-only, confirmed `Contents/Resources/licenses/PHOSPHOR-LICENSE.txt` and `icon.icns`, then detached it. Rebuilt after the final spacing/long-value correction; final SHA-256: `ec2e9fba49292ad9ba48da85574da90c15696a9f4d12b34cdcfc22760c8b21c0`.
 - Windows/macOS CI is triggered by pushing the implementation; its current status is reported separately in the PR rather than inferred from local macOS results.
 
 ## Delivery boundaries

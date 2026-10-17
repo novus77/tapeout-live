@@ -10,6 +10,7 @@ import {
   act,
 } from "@testing-library/react";
 import App from "./App";
+import { Metric } from "./components";
 import { defaults, type Dashboard, type Settings } from "./bridge";
 import { useMonitor } from "./useMonitor";
 const mock = vi.hoisted(() => ({
@@ -37,6 +38,14 @@ afterEach(() => {
 });
 const first = "0x0000000000000000000000000000000000000001",
   second = "0x0000000000000000000000000000000000000002";
+it("uses compact typography for long metrics without truncating values", () => {
+  const { container } = render(
+    <Metric title="Network power" value="297645312" unit="H" digits={0} />,
+  );
+  const number = container.querySelector(".metric-number")!;
+  expect(number.classList.contains("long-value")).toBe(true);
+  expect(number.textContent).toBe("297,645,312H");
+});
 function setup() {
   mock.dashboard = {
     settings: {
