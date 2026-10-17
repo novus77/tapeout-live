@@ -12,6 +12,7 @@ import { defaults, type Dashboard, type Settings } from "./bridge";
 const mock = vi.hoisted(() => ({
   dashboard: null as unknown,
   command: vi.fn(),
+  updated: null as null | (() => void),
 }));
 vi.mock("./bridge", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./bridge")>();
@@ -19,7 +20,12 @@ vi.mock("./bridge", async (importOriginal) => {
     ...actual,
     native: true,
     command: mock.command,
-    onSnapshot: async () => () => {},
+    onSnapshot: async (callback: () => void) => {
+      mock.updated = callback;
+      return () => {
+        mock.updated = null;
+      };
+    },
   };
 });
 afterEach(() => {
@@ -122,4 +128,95 @@ it("clears the previous wallet while a switch is awaiting native confirmation", 
     complete?.();
   }
   await screen.findByText("222");
+});
+
+it("switches the complete dashboard to FAB without showing old BEM metrics", async () => {
+  setup();
+  render(<App />);
+  await screen.findByText("111");
+  const original = mock.command.getMockImplementation()!;
+  let complete: (() => void) | undefined;
+  mock.command.mockImplementation(
+    (name: string, args?: Record<string, unknown>) => {
+      if (name === "select_project")
+        return new Promise((resolve) => {
+          complete = () => {
+            const data = mock.dashboard as Dashboard;
+            data.settings = { ...data.settings, project: "fab" };
+            data.address = {
+              ...data.address!,
+              resource: "fab_address",
+              data: {
+                summary: {
+                  miner_count: "2",
+                  active: "1",
+                  optimal: "1",
+                  total_hashrate: "333",
+                  estimated_daily: "0.00000001",
+                },
+                assets: { token: "0.12345678" },
+                circuits: [],
+                circuitCount: 2,
+                circuitsComplete: false,
+              },
+            };
+            resolve(data.settings);
+          };
+        });
+      return original(name, args);
+    },
+  );
+  fireEvent.click(screen.getByRole("button", { name: "FAB" }));
+  expect(screen.queryByText("111")).toBeNull();
+  mock.updated?.();
+  await waitFor(() => expect(screen.queryByText("111")).toBeNull());
+  complete?.();
+  await screen.findByText("333");
+  expect(screen.getByText("FAB 余额")).toBeTruthy();
+  expect(screen.queryByText("BNB 余额")).toBeNull();
+  expect(screen.getByText("0.12345678")).toBeTruthy();
+  expect(
+    screen.getByRole("button", { name: "FAB" }).getAttribute("aria-pressed"),
+  ).toBe("true");
+  fireEvent.click(screen.getByRole("button", { name: "EN" }));
+  await screen.findByText("FAB balance");
+});
+
+it("retains FAB selection while switching accounts and locale", async () => {
+  setup();
+  const data = mock.dashboard as Dashboard;
+  data.settings.project = "fab";
+  data.address!.resource = "fab_address";
+  data.address!.data.summary = {
+    miner_count: "0",
+    total_hashrate: "111",
+    estimated_daily: "0.00000001",
+    active: "0",
+    optimal: "0",
+  };
+  render(<App />);
+  await screen.findByText("0.00000001");
+  fireEvent.change(screen.getByRole("combobox", { name: "选择账户" }), {
+    target: { value: second },
+  });
+  await screen.findByText("222");
+  expect((mock.dashboard as Dashboard).settings.project).toBe("fab");
+  expect(
+    screen.getByRole("button", { name: "FAB" }).getAttribute("aria-pressed"),
+  ).toBe("true");
+  fireEvent.click(screen.getByRole("button", { name: "EN" }));
+  await screen.findByText("FAB balance");
+  expect(screen.queryByText("BEM balance")).toBeNull();
+});
+
+it("distinguishes FAB indexing from an indexed empty wallet", async () => {
+  setup();
+  const data = mock.dashboard as Dashboard;
+  data.settings.project = "fab";
+  data.address!.resource = "fab_address";
+  data.address!.data = { pending: true, summary: null, circuits: [] };
+  render(<App />);
+  await screen.findAllByText("正在索引");
+  expect(screen.queryByText("暂无已收录矿机")).toBeNull();
+  expect(screen.queryByText("111")).toBeNull();
 });

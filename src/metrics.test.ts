@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { circuitTotals, formatMetric, freshness } from "./metrics";
 describe("monitor semantics", () => {
+  it("preserves decimal-string precision without floating point rounding", () => {
+    expect(formatMetric("9007199254740993", 0)).toBe("9,007,199,254,740,993");
+    expect(formatMetric("123456789012345678.12345678", 8)).toBe(
+      "123,456,789,012,345,678.12345678",
+    );
+    expect(formatMetric("0.00000001", 8)).toBe("0.00000001");
+    expect(formatMetric("0.00000001", 2)).toBe("<0.01");
+  });
   it("distinguishes unavailable from zero", () => {
     expect(formatMetric(null)).toBe("—");
     expect(formatMetric(0)).toBe("0");

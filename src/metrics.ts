@@ -1,6 +1,20 @@
 export type Row = Record<string, unknown>;
 export function formatMetric(value: unknown, digits = 2): string {
   if (value === null || value === undefined || value === "") return "—";
+  if (typeof value === "string" && /^\d+(\.\d+)?$/.test(value)) {
+    const [whole, fraction = ""] = value.split(".");
+    const scale = 10n ** BigInt(digits);
+    let rounded =
+      BigInt(whole) * scale +
+      BigInt((fraction + "0".repeat(digits)).slice(0, digits) || "0");
+    if (Number(fraction[digits] ?? "0") >= 5) rounded++;
+    if (rounded === 0n && /[1-9]/.test(whole + fraction))
+      return `<${digits ? "0." + "0".repeat(digits - 1) + "1" : "1"}`;
+    const tail = digits
+      ? (rounded % scale).toString().padStart(digits, "0").replace(/0+$/, "")
+      : "";
+    return (rounded / scale).toLocaleString("en-US") + (tail ? "." + tail : "");
+  }
   const number = Number(value);
   return Number.isFinite(number)
     ? new Intl.NumberFormat("en-US", { maximumFractionDigits: digits }).format(

@@ -11,7 +11,8 @@ import {
 } from "./MonitorSections";
 import { AccountManager } from "./AccountManager";
 export default function App() {
-  const { data, error, setError, save, select } = useMonitor(),
+  const { data, error, setError, save, select, selectProject, switching } =
+      useMonitor(),
     t = translator(data.settings.language),
     busy = Object.values(data.jobs).some((j) => j.busy);
   useEffect(() => {
@@ -73,12 +74,14 @@ export default function App() {
           <div className="language-switch" aria-label="Language">
             <button
               aria-pressed={data.settings.language === "zh"}
+              disabled={switching}
               onClick={() => void language("zh")}
             >
               中文
             </button>
             <button
               aria-pressed={data.settings.language === "en"}
+              disabled={switching}
               onClick={() => void language("en")}
             >
               EN
@@ -86,7 +89,7 @@ export default function App() {
           </div>
           <button
             className="icon-button"
-            disabled={busy}
+            disabled={busy || switching}
             aria-label={t("refresh")}
             title={t("refresh")}
             onClick={() => void refresh()}
@@ -95,6 +98,21 @@ export default function App() {
           </button>
         </div>
       </header>
+      <div className="project-switch" role="group" aria-label={t("project")}>
+        {(["bem", "fab"] as const).map((project) => (
+          <button
+            key={project}
+            aria-pressed={data.settings.project === project}
+            disabled={switching}
+            onClick={() =>
+              void selectProject(project).catch((e) => setError(String(e)))
+            }
+          >
+            {project.toUpperCase()}
+          </button>
+        ))}
+        <span>{data.settings.project === "fab" ? "FabX" : "TapeOut"}</span>
+      </div>
       <main>
         {!native && <div className="notice">{t("preview")}</div>}
         {error && (
@@ -103,7 +121,12 @@ export default function App() {
           </p>
         )}
         <NetworkSection data={data} />
-        <WalletSection data={data} select={select} onError={setError} />
+        <WalletSection
+          data={data}
+          select={select}
+          onError={setError}
+          disabled={switching}
+        />
         {Object.entries(data.jobs)
           .filter(([, j]) => j.error)
           .map(([resource, job]) => (
@@ -132,9 +155,10 @@ export default function App() {
           language={data.settings.language}
         />
         <AccountManager
-          key={data.settings.wallet}
+          key={`${data.settings.project}:${data.settings.wallet}`}
           settings={data.settings}
           save={save}
+          disabled={switching}
         />
       </main>
     </div>

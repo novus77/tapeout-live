@@ -44,6 +44,7 @@ export function Metric({
   icon,
   values,
   accent = false,
+  digits = 2,
 }: {
   title: string;
   value: unknown;
@@ -52,6 +53,7 @@ export function Metric({
   icon?: ReactNode;
   values?: number[];
   accent?: boolean;
+  digits?: number;
 }) {
   return (
     <article className={`metric ${accent ? "accent" : ""}`}>
@@ -60,7 +62,7 @@ export function Metric({
         {title}
       </div>
       <div className="metric-number">
-        {formatMetric(value)}
+        {formatMetric(value, digits)}
         {unit && <span>{unit}</span>}
       </div>
       {values && <Sparkline values={values} label={`${title} history`} />}

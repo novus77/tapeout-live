@@ -19,7 +19,7 @@ fn get_dashboard(state: State<Shared>) -> Result<Value, String> {
 fn get_history(state: State<Shared>, resource: String, metric: String) -> Result<Value, String> {
     let state = state.lock().map_err(|e| e.to_string())?;
     state.store.history(
-        &resource,
+        &state.settings.resource_key(&resource),
         if resource == "address" {
             &state.settings.wallet
         } else {
@@ -52,7 +52,7 @@ fn update_settings(
     {
         let mut state = state.lock().map_err(|e| e.to_string())?;
         state.store.save_settings(&settings)?;
-        if settings.wallet != state.settings.wallet {
+        if settings.wallet != state.settings.wallet || settings.project != state.settings.project {
             state.reset_wallet();
         }
         state.settings = settings.clone();
@@ -75,6 +75,16 @@ fn select_account(
         return Err("Selected wallet is not saved.".into());
     }
     settings.wallet = address;
+    update_settings(app, state, settings)
+}
+#[tauri::command]
+fn select_project(
+    app: tauri::AppHandle,
+    state: State<Shared>,
+    project: String,
+) -> Result<Settings, String> {
+    let mut settings = state.lock().map_err(|e| e.to_string())?.settings.clone();
+    settings.project = project;
     update_settings(app, state, settings)
 }
 #[tauri::command]
@@ -314,6 +324,7 @@ pub fn run() {
             get_history,
             update_settings,
             select_account,
+            select_project,
             refresh_resource,
             set_network_visible,
             clear_history,

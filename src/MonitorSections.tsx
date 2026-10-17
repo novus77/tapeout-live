@@ -15,47 +15,17 @@ import {
   type Language,
   type Message,
 } from "./i18n";
-import { circuitTotals, formatMetric, freshness, type Row } from "./metrics";
-import { Metric } from "./components";
-export function SnapshotTime({
-  snapshot,
-  language,
-  interval,
-}: {
-  snapshot: Snapshot | null;
-  language: Language;
-  interval: number;
-}) {
-  const t = translator(language),
-    state = freshness(snapshot, interval);
-  const label =
-    state === "fresh"
-      ? "fresh"
-      : state === "stale"
-        ? "stale"
-        : state === "unknown"
-          ? "unknown"
-          : "unavailable";
-  return (
-    <span
-      className={`sync ${state}`}
-      title={
-        snapshot?.observedAt
-          ? `${t("source")} ${new Date(snapshot.observedAt).toLocaleString(locale(language))}`
-          : t("unknown")
-      }
-    >
-      <i />
-      {t(label)}
-    </span>
-  );
-}
+import { circuitTotals, formatMetric, type Row } from "./metrics";
+import { Metric, Sparkline } from "./components";
+import { FabNetwork } from "./FabNetwork";
+import { SnapshotTime } from "./SnapshotTime";
 export function NetworkSection({ data }: { data: Dashboard }) {
   const { language, interval } = data.settings,
     t = translator(language),
     market = object(data.market?.data.market),
     network = object(data.network?.data.hashrate),
     pools = rows(network.snapshot);
+  if (data.settings.project === "fab") return <FabNetwork data={data} />;
   return (
     <section className="network-section" aria-labelledby="network-title">
       <div className="section-title">
@@ -130,12 +100,15 @@ export function WalletSection({
   data,
   select,
   onError,
+  disabled = false,
 }: {
   data: Dashboard;
   select: (address: string) => Promise<void>;
   onError: (error: string) => void;
+  disabled?: boolean;
 }) {
-  const { language, accounts, wallet } = data.settings,
+  const { language, accounts, wallet, project } = data.settings,
+    fab = project === "fab",
     t = translator(language),
     summary = object(data.address?.data.summary),
     assets = object(data.address?.data.assets),
@@ -165,6 +138,7 @@ export function WalletSection({
             className="account-selector"
             aria-label={t("choose")}
             value={wallet}
+            disabled={disabled}
             onChange={(e) =>
               void select(e.target.value).catch((e) => onError(String(e)))
             }
@@ -212,8 +186,13 @@ export function WalletSection({
             />
             <Metric
               title={t("production")}
-              value={summary.total_estimated_daily_bem}
-              unit="BEM"
+              value={
+                fab
+                  ? summary.estimated_daily
+                  : summary.total_estimated_daily_bem
+              }
+              unit={fab ? "FAB" : "BEM"}
+              digits={fab ? 8 : 2}
               note={t("estimate")}
               icon={<ActivityLogIcon />}
               accent
@@ -223,24 +202,41 @@ export function WalletSection({
               value={summary.miner_count}
               icon={<CubeIcon />}
             />
-            <Metric title={t("optimal")} value={totals.optimal} />
+            <Metric
+              title={t("optimal")}
+              value={fab ? summary.optimal : totals.optimal}
+            />
           </div>
-          <div className="split-labels">
-            <span>
-              {t("verified")} <b>{formatMetric(totals.verified, 0)} H</b>
-            </span>
-            <span>
-              {t("unverified")} <b>{formatMetric(totals.unverified, 0)} H</b>
-            </span>
-          </div>
+          {fab ? (
+            <div className="split-labels">
+              <span>
+                {t("running")} <b>{formatMetric(summary.active, 0)}</b>
+              </span>
+            </div>
+          ) : (
+            <div className="split-labels">
+              <span>
+                {t("verified")} <b>{formatMetric(totals.verified, 0)} H</b>
+              </span>
+              <span>
+                {t("unverified")} <b>{formatMetric(totals.unverified, 0)} H</b>
+              </span>
+            </div>
+          )}
           <div className="balance-row">
             <span>
-              {t("bemBalance")} <b>{formatMetric(assets.bem, 4)}</b>
+              {t(fab ? "fabBalance" : "bemBalance")}{" "}
+              <b>
+                {formatMetric(fab ? assets.token : assets.bem, fab ? 8 : 4)}
+              </b>
             </span>
-            <span>
-              {t("bnbBalance")} <b>{formatMetric(assets.bnb, 4)}</b>
-            </span>
+            {!fab && (
+              <span>
+                {t("bnbBalance")} <b>{formatMetric(assets.bnb, 4)}</b>
+              </span>
+            )}
           </div>
+          {fab && <PowerHistory snapshot={data.address} language={language} />}
           <div className="source-note">
             {t("balanceAge")} ·{" "}
             {assets.observed_at
@@ -257,6 +253,31 @@ export function WalletSection({
         </>
       )}
     </section>
+  );
+}
+function PowerHistory({
+  snapshot,
+  language,
+}: {
+  snapshot: Snapshot | null;
+  language: Language;
+}) {
+  const t = translator(language),
+    points = rows(object(snapshot?.data.hashrateHistory).points);
+  const values = points
+    .filter((p) =>
+      typeof p.weight === "number"
+        ? Number.isFinite(p.weight) && p.weight >= 0
+        : typeof p.weight === "string" && /^\d+(\.\d+)?$/.test(p.weight),
+    )
+    .map((p) => Number(p.weight))
+    .filter(Number.isFinite);
+  if (values.length < 2) return null;
+  return (
+    <div className="power-history">
+      <span className="helper">{t("powerHistory")}</span>
+      <Sparkline values={values} label={t("powerHistory")} />
+    </div>
   );
 }
 export function CircuitSection({
@@ -284,6 +305,12 @@ export function CircuitSection({
           {collection.length} {t("groups")}
         </span>
       </div>
+      {snapshot.data.circuitsComplete === false && (
+        <p className="helper">
+          {t("partialCircuits")}: {rows(snapshot.data.circuits).length} /{" "}
+          {formatMetric(snapshot.data.circuitCount, 0)}
+        </p>
+      )}
       <input
         className="circuit-search"
         aria-label={t("search")}
@@ -292,7 +319,9 @@ export function CircuitSection({
         onChange={(e) => setQuery(e.target.value)}
       />
       {!collection.length ? (
-        <p className="helper">{t("noCircuits")}</p>
+        <p className="helper">
+          {t(snapshot.data.pending === true ? "indexing" : "noCircuits")}
+        </p>
       ) : (
         collection.map((row: Row, i) => (
           <article
@@ -300,7 +329,11 @@ export function CircuitSection({
             key={`${row.processor}:${row.circuit_id}:${i}`}
           >
             <span className="circuit-chip">
-              {row.processor === "tapeout" ? "T" : "B"}
+              {snapshot.resource === "fab_address"
+                ? "F"
+                : row.processor === "tapeout"
+                  ? "T"
+                  : "B"}
             </span>
             <div className="circuit-info">
               <strong title={String(row.task_name ?? "")}>
@@ -313,7 +346,9 @@ export function CircuitSection({
                   ? t("active")
                   : row.status === "inactive"
                     ? t("inactive")
-                    : t("unknownState")}
+                    : row.status === "not_started"
+                      ? t("notStarted")
+                      : t("unknownState")}
                 {Number(row.count) > 1 ? ` · ${row.count}` : ""}
               </span>
             </div>
@@ -322,6 +357,12 @@ export function CircuitSection({
               <span className={row.is_champion === 1 ? "teal" : ""}>
                 {row.is_champion === 1 ? t("optimal") : t("base")}
               </span>
+              {snapshot.resource === "fab_address" && (
+                <span>
+                  {formatMetric(row.estimated_daily, 8)} FAB/
+                  {language === "zh" ? "日" : "day"}
+                </span>
+              )}
             </div>
           </article>
         ))
@@ -361,6 +402,9 @@ export function ActivitySection({
       <div className="section-title">
         <h2>{t("activity")}</h2>
       </div>
+      {snapshot.data.activityUnavailable === true && (
+        <p className="helper">{t("activityUnavailable")}</p>
+      )}
       {activity.length ? (
         activity.map((row, i) => (
           <article className="activity-row" key={String(row.operation_id ?? i)}>
@@ -390,7 +434,9 @@ export function ActivitySection({
           </article>
         ))
       ) : (
-        <p className="helper">{t("noActivity")}</p>
+        <p className="helper">
+          {t(snapshot.data.pending === true ? "indexing" : "noActivity")}
+        </p>
       )}
     </section>
   );

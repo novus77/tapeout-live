@@ -3,6 +3,7 @@ import { listen } from "@tauri-apps/api/event";
 import type { Row } from "./metrics";
 import type { Language } from "./i18n";
 export type Account = { address: string; name: string };
+export type Project = "bem" | "fab";
 export type Settings = {
   wallet: string;
   alias: string;
@@ -13,6 +14,7 @@ export type Settings = {
   powerDrop: number;
   accounts: Account[];
   language: Language;
+  project: Project;
 };
 export type Snapshot = {
   resource: string;
@@ -48,6 +50,7 @@ export const defaults: Settings = {
   powerDrop: 10,
   accounts: [],
   language: "zh",
+  project: "bem",
 };
 export const native = "__TAURI_INTERNALS__" in window;
 export async function command<T>(

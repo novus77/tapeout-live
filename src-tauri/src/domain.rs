@@ -34,6 +34,7 @@ pub struct Settings {
     pub power_drop: f64,
     pub accounts: Vec<Account>,
     pub language: String,
+    pub project: String,
 }
 impl Default for Settings {
     fn default() -> Self {
@@ -47,6 +48,16 @@ impl Default for Settings {
             power_drop: 10.0,
             accounts: vec![],
             language: "zh".into(),
+            project: "bem".into(),
+        }
+    }
+}
+impl Settings {
+    pub fn resource_key(&self, resource: &str) -> String {
+        if self.project == "fab" {
+            format!("fab_{resource}")
+        } else {
+            resource.into()
         }
     }
 }
@@ -96,6 +107,9 @@ pub fn valid_wallet(wallet: &str) -> bool {
         && wallet[2..].bytes().all(|c| c.is_ascii_hexdigit())
 }
 pub fn validate_settings(settings: &Settings) -> Result<(), String> {
+    if !["bem", "fab"].contains(&settings.project.as_str()) {
+        return Err("Unsupported monitoring project.".into());
+    }
     if !settings.wallet.is_empty() && !valid_wallet(&settings.wallet) {
         return Err("Enter a 42-character hexadecimal wallet address.".into());
     }
@@ -148,6 +162,9 @@ fn nonnegative(value: &Value, key: &str, required: bool) -> Result<(), String> {
     }
 }
 pub fn normalize(resource: &str, input: Value, wallet: Option<&str>) -> Result<Snapshot, String> {
+    if resource.starts_with("fab_") {
+        return crate::fab::normalize(resource, input, wallet);
+    }
     let data = input
         .get("data")
         .filter(|v| v.is_object())
