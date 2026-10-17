@@ -454,14 +454,6 @@ h2 {
   outline: 1px solid var(--accent);
   outline-offset: 2px;
 }
-.batch-outcomes {
-  font-size: 10px;
-  color: var(--muted);
-  margin-bottom: 6px;
-}
-.batch-outcomes p {
-  margin: 2px 0;
-}
 .account-edit input[readonly] {
   font-size: 10px;
 }

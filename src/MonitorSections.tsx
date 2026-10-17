@@ -96,9 +96,11 @@ export function WalletSection({
     data.address ? { ...data.address, observedAt: assetTime } : null,
     data.settings.interval,
   );
-  const balanceDetail = fab
-    ? t("balanceUnavailable")
-    : `${t("balanceAge")} · ${assetTime && Number.isFinite(Date.parse(assetTime)) ? new Date(assetTime).toLocaleString(locale(language)) : t("unknown")} · ${t(balanceState === "fresh" ? "fresh" : balanceState === "stale" ? "stale" : "unknown")}`;
+  const balanceDetail = `${t("balanceAge")} · ${assetTime && Number.isFinite(Date.parse(assetTime)) ? new Date(assetTime).toLocaleString(locale(language)) : t("unknown")} · ${t(balanceState === "fresh" ? "fresh" : balanceState === "stale" ? "stale" : "unknown")}`;
+  const tokenBalance = fab ? assets.token : assets.bem;
+  const tokenDetail =
+    fab && tokenBalance == null ? t("balanceUnavailable") : balanceDetail;
+  const nativeDetail = fab ? t("balanceUnavailable") : balanceDetail;
   async function copy() {
     try {
       await navigator.clipboard.writeText(wallet);
@@ -177,11 +179,11 @@ export function WalletSection({
             />
           </div>
           <div className="balance-row">
-            <span title={balanceDetail} aria-description={balanceDetail}>
-              {t("bemBalance")}{" "}
-              <b>{formatMetric(fab ? undefined : assets.bem, 4)}</b>
+            <span title={tokenDetail} aria-description={tokenDetail}>
+              {t(fab ? "fabBalance" : "bemBalance")}{" "}
+              <b>{formatMetric(tokenBalance, fab ? 8 : 4)}</b>
             </span>
-            <span title={balanceDetail} aria-description={balanceDetail}>
+            <span title={nativeDetail} aria-description={nativeDetail}>
               {t(fab ? "okbBalance" : "bnbBalance")}{" "}
               <b>{formatMetric(fab ? undefined : assets.bnb, 4)}</b>
             </span>

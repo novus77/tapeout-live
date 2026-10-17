@@ -224,7 +224,7 @@ it("keeps the account and confirmation available when direct removal fails", asy
   expect(data.settings.wallet).toBe(first);
 });
 
-it("does not relabel legacy FAB holdings and keeps source rows removed", () => {
+it("shows FAB token holdings without relabeling BEM or BNB and keeps source rows removed", () => {
   const data = fixture("fab");
   const { container } = render(
     <>
@@ -233,11 +233,12 @@ it("does not relabel legacy FAB holdings and keeps source rows removed", () => {
     </>,
   );
   const cells = container.querySelector(".balance-row")!;
-  expect(within(cells as HTMLElement).getByText("BEM balance")).toBeTruthy();
+  expect(within(cells as HTMLElement).getByText("FAB balance")).toBeTruthy();
   expect(within(cells as HTMLElement).getByText("OKB balance")).toBeTruthy();
-  expect(cells.textContent).not.toMatch(/12345|34567|45678/);
+  expect(within(cells as HTMLElement).getByText("12,345")).toBeTruthy();
+  expect(cells.textContent).not.toMatch(/34567|45678/);
   expect(screen.getAllByTitle("TapeOutScan balance unavailable")).toHaveLength(
-    2,
+    1,
   );
   expect(container.querySelector(".source-note")).toBeNull();
   expect(screen.queryByText("Asset snapshot")).toBeNull();

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { command, native } from "./bridge";
-import { locale, translator } from "./i18n";
+import { translator } from "./i18n";
 import { useMonitor } from "./useMonitor";
 import { NetworkSection, WalletSection } from "./MonitorSections";
 import { SettingsPanel } from "./SettingsPanel";
@@ -121,33 +121,6 @@ export default function App() {
             {error}
           </p>
         )}
-        {data.refreshBatch &&
-          data.refreshBatch.entries.some((entry) =>
-            ["failed", "deferred", "cancelled"].includes(entry.status),
-          ) && (
-            <div className="batch-outcomes" role="status">
-              {data.refreshBatch.entries
-                .filter((entry) =>
-                  ["failed", "deferred", "cancelled"].includes(entry.status),
-                )
-                .map((entry) => (
-                  <p key={entry.resource}>
-                    {entry.resource.startsWith("fab_") ? "FAB" : "BEM"} ·{" "}
-                    {t(
-                      entry.resource.endsWith("address")
-                        ? "overview"
-                        : entry.resource.endsWith("market")
-                          ? entry.resource.startsWith("fab_")
-                            ? "fabPrice"
-                            : "bemPrice"
-                          : "network",
-                    )}{" "}
-                    · {t(entry.status)}
-                    {entry.error ? ` · ${entry.error}` : ""}
-                  </p>
-                ))}
-            </div>
-          )}
         {settingsOpen ? (
           <SettingsPanel
             settings={data.settings}
@@ -166,22 +139,6 @@ export default function App() {
               disabled={switching}
               openSettings={() => setSettingsOpen(true)}
             />
-            {Object.entries(data.jobs)
-              .filter(([, j]) => j.error)
-              .map(([resource, job]) => (
-                <details className="notice warning" key={resource}>
-                  <summary>
-                    {resource === "address" ? t("overview") : t("network")} ·{" "}
-                    {t("updateError")}
-                  </summary>
-                  <p>
-                    {job.terminal
-                      ? t("compatibility")
-                      : `${t("retry")} ${new Date(job.nextAt * 1000).toLocaleTimeString(locale(data.settings.language))}`}
-                  </p>
-                  <p>{job.error}</p>
-                </details>
-              ))}
           </>
         )}
       </main>

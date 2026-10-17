@@ -340,10 +340,10 @@ it("switches the complete dashboard to FAB without showing old BEM metrics", asy
   await waitFor(() => expect(screen.queryByText("111")).toBeNull());
   complete?.();
   await screen.findByText("333");
-  expect(screen.getByText("BEM 余额")).toBeTruthy();
+  expect(screen.getByText("FAB 余额")).toBeTruthy();
   expect(screen.getByText("OKB 余额")).toBeTruthy();
   expect(screen.queryByText("BNB 余额")).toBeNull();
-  expect(screen.queryByText("0.12345678")).toBeNull();
+  expect(screen.getByText("0.12345678")).toBeTruthy();
   expect(
     screen.getByRole("button", { name: "FAB" }).getAttribute("aria-pressed"),
   ).toBe("true");
@@ -380,7 +380,7 @@ it("retains FAB selection while switching accounts and locale", async () => {
   await screen.findByRole("button", { name: "Settings" });
   fireEvent.click(screen.getByRole("button", { name: "Settings" }));
   await screen.findByText("OKB balance");
-  expect(screen.getByText("BEM balance")).toBeTruthy();
+  expect(screen.getByText("FAB balance")).toBeTruthy();
 });
 
 it("distinguishes FAB indexing from an indexed empty wallet", async () => {
@@ -401,7 +401,14 @@ it.each(["bem", "fab"] as const)(
     setup();
     const data = mock.dashboard as Dashboard;
     data.settings.project = project;
-    data.jobs = { address: { busy: true, nextAt: 0, terminal: false } };
+    data.jobs = {
+      address: {
+        busy: true,
+        nextAt: 0,
+        terminal: false,
+        error: "Provider download interrupted.",
+      },
+    };
     const original = mock.command.getMockImplementation()!;
     let complete: ((value: unknown) => void) | undefined;
     mock.command.mockImplementation(
@@ -414,6 +421,7 @@ it.each(["bem", "fab"] as const)(
     );
     render(<App />);
     await screen.findByText("111");
+    expect(screen.queryByText("Provider download interrupted.")).toBeNull();
     const refresh = screen.getByRole("button", {
       name: "刷新",
     }) as HTMLButtonElement;
@@ -433,8 +441,8 @@ it.each(["bem", "fab"] as const)(
       ],
     };
     await act(async () => mock.updated?.());
-    await screen.findByText(/FAB.*失败.*Source failed/);
-    await screen.findByText(/BEM.*暂缓/);
+    expect(screen.queryByText(/Source failed/)).toBeNull();
+    expect(screen.queryByText(/BEM.*暂缓/)).toBeNull();
     await act(async () =>
       complete?.({
         busy: true,
@@ -471,7 +479,7 @@ it("releases refresh admission on command failure and respects consumed dropdown
   ).toBe(false);
 });
 
-it("keeps global batch busy after a view switch and shows inactive-project cancellation", async () => {
+it("keeps global batch busy after a view switch and hides inactive-project cancellation", async () => {
   setup();
   const data = mock.dashboard as Dashboard;
   data.refreshBatch = {
@@ -506,7 +514,7 @@ it("keeps global batch busy after a view switch and shows inactive-project cance
     entries: [{ resource: "address", status: "cancelled" }],
   };
   await act(async () => mock.updated?.());
-  await screen.findByText(/BEM.*已取消/);
+  expect(screen.queryByText(/BEM.*已取消/)).toBeNull();
   expect(
     (screen.getByRole("button", { name: "刷新" }) as HTMLButtonElement)
       .disabled,
