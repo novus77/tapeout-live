@@ -4,9 +4,11 @@ A small Windows/macOS tray application for monitoring a public TapeOut wallet an
 
 ## Features
 
-- Menu-bar/system-tray panel with wallet power, circuits, optimal positions, estimated daily BEM, and balances.
+- Fixed 420 × 720 logical-point menu-bar/system-tray panel with mixed-DPI monitor positioning.
+- One page: network statistics first, selected wallet power/circuits/production/balances below, then circuits and events.
+- Up to 20 saved accounts, instant switching, and persistent Chinese/English interface selection. Legacy wallet preferences migrate automatically.
 - Network prices, pool weights, daily emission, low-frequency indexed circuit statistics, and material prices.
-- Searchable circuit details, wallet activity, and local price trends.
+- Searchable inline circuits and wallet activity; no tab navigation or secondary window.
 - Rust-owned background polling, SQLite snapshots, per-resource errors, and rate-limit backoff.
 - Opt-in power-drop and confirmed optimal-position notifications, pinning, and launch at login.
 
@@ -21,7 +23,7 @@ npm ci
 npm run tauri dev
 ```
 
-The first launch opens setup. Enter a public BSC wallet in Settings. Closing the panel or details window keeps monitoring alive; Quit exits it. Notifications and launch at login default off. Address/market refresh defaults to 60 seconds; full network statistics refresh every 15 minutes while Network is visible.
+Expand the inline account manager to save a public wallet address and optional name. Select saved accounts directly above the wallet metrics. Switch language in the header. The panel has no chain badge, external links, close/back/quit controls, or manual resize handles. Clicking outside dismisses it unless pinned; Escape also dismisses. Notifications and launch at login default off. Address/market refresh defaults to 60 seconds; complete network statistics refresh every 15 minutes while the panel is visible. Only the selected wallet is actively polled.
 
 `npm run dev` opens a layout-only browser preview with no fabricated balances and no network connection. Live requests run in Rust, not through a browser proxy.
 
@@ -60,7 +62,7 @@ React renders normalized snapshots through a typed IPC bridge. Rust owns the HTT
 
 Redirects are disabled. The complete network response is large and is excluded from frequent polling. The provider does not have a confirmed versioned API contract; schema errors retain last-good snapshots. No fallback provider is configured.
 
-SQLite lives in the platform application-data directory under `io.tapeout.live`. Settings include only a public wallet and preferences. History retention is 30 days; no telemetry is enabled. See [the approved specification](docs/SPEC.md) and [validation notes](docs/VALIDATION.md) for scope and test coverage.
+SQLite lives in the platform application-data directory under `io.tapeout.live`. Settings include saved public wallets, the selected wallet, locale, and preferences. Snapshots remain isolated by wallet; history retention is 30 days. No telemetry is enabled. See [the v0.2 specification](docs/specs/2026-10-16-unified-panel-v2.md) and [validation notes](docs/VALIDATION.md). The [original specification](docs/SPEC.md) remains as historical context where superseded.
 
 ## License
 

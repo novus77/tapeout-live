@@ -17,6 +17,12 @@ pub struct Snapshot {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
+pub struct Account {
+    pub address: String,
+    pub name: String,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Settings {
     pub wallet: String,
@@ -26,6 +32,8 @@ pub struct Settings {
     pub autostart: bool,
     pub pinned: bool,
     pub power_drop: f64,
+    pub accounts: Vec<Account>,
+    pub language: String,
 }
 impl Default for Settings {
     fn default() -> Self {
@@ -37,8 +45,50 @@ impl Default for Settings {
             autostart: false,
             pinned: false,
             power_drop: 10.0,
+            accounts: vec![],
+            language: "zh".into(),
         }
     }
+}
+pub fn canonical_settings(mut settings: Settings) -> Result<Settings, String> {
+    settings.wallet = settings.wallet.trim().to_lowercase();
+    settings.alias = settings.alias.trim().into();
+    if settings.accounts.is_empty() && !settings.wallet.is_empty() {
+        settings.accounts.push(Account {
+            address: settings.wallet.clone(),
+            name: settings.alias.clone(),
+        });
+    }
+    let mut seen = std::collections::HashSet::new();
+    for account in &mut settings.accounts {
+        account.address = account.address.trim().to_lowercase();
+        account.name = account.name.trim().into();
+        if !valid_wallet(&account.address)
+            || account.name.chars().count() > 40
+            || !seen.insert(account.address.clone())
+        {
+            return Err("Invalid or duplicate saved wallet.".into());
+        }
+    }
+    if settings.accounts.len() > 20 || !["zh", "en"].contains(&settings.language.as_str()) {
+        return Err("Invalid account count or language.".into());
+    }
+    if settings.wallet.is_empty() {
+        if let Some(first) = settings.accounts.first() {
+            settings.wallet = first.address.clone();
+        }
+    }
+    if !settings.wallet.is_empty() {
+        settings.alias = settings
+            .accounts
+            .iter()
+            .find(|a| a.address == settings.wallet)
+            .ok_or("Selected wallet is not saved.")?
+            .name
+            .clone();
+    }
+    validate_settings(&settings)?;
+    Ok(settings)
 }
 pub fn valid_wallet(wallet: &str) -> bool {
     wallet.len() == 42

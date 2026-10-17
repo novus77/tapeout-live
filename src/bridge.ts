@@ -1,6 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { Row } from "./metrics";
+import type { Language } from "./i18n";
+export type Account = { address: string; name: string };
 export type Settings = {
   wallet: string;
   alias: string;
@@ -9,6 +11,8 @@ export type Settings = {
   autostart: boolean;
   pinned: boolean;
   powerDrop: number;
+  accounts: Account[];
+  language: Language;
 };
 export type Snapshot = {
   resource: string;
@@ -42,6 +46,8 @@ export const defaults: Settings = {
   autostart: false,
   pinned: false,
   powerDrop: 10,
+  accounts: [],
+  language: "zh",
 };
 export const native = "__TAURI_INTERNALS__" in window;
 export async function command<T>(

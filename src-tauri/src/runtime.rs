@@ -43,6 +43,7 @@ pub type Shared = Arc<Mutex<Engine>>;
 impl Engine {
     pub fn new(store: Store) -> Result<Self, String> {
         let settings = store.settings()?;
+        store.save_settings(&settings)?;
         Ok(Self {
             store,
             settings,
@@ -94,15 +95,33 @@ impl Engine {
         let after = next.data["summary"]["total_hashrate"].as_f64()?;
         if !initial && !messages.is_empty() && now - self.last_notification >= 300 {
             self.last_notification = now;
-            return Some(messages.into_iter().take(3).collect::<Vec<_>>().join("\n"));
+            let messages = messages
+                .into_iter()
+                .take(3)
+                .map(|message| {
+                    if self.settings.language == "zh" {
+                        message
+                            .replace("Optimal position lost", "失去最优席位")
+                            .replace("Optimal position gained", "获得最优席位")
+                            .replace("Mining circuit", "矿机")
+                    } else {
+                        message
+                    }
+                })
+                .collect::<Vec<_>>();
+            return Some(messages.join("\n"));
         }
         let reason = if crate::alerts::power_drop(before, after, self.settings.power_drop) {
             Some((
                 after,
-                format!(
-                    "Mining power change observed: {:.0} H → {:.0} H",
-                    before, after
-                ),
+                if self.settings.language == "zh" {
+                    format!("观测到算力下降：{:.0} H → {:.0} H", before, after)
+                } else {
+                    format!(
+                        "Mining power change observed: {:.0} H → {:.0} H",
+                        before, after
+                    )
+                },
             ))
         } else {
             None
