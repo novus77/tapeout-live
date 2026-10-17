@@ -6,10 +6,17 @@
 - TypeScript, ESLint, Vite production build, rustfmt, and clippy with warnings denied pass. No additional runtime dependency was introduced.
 - The actual Rust FAB provider path was checked against public TapeOutScan home and public sample address `0xa96d30dc46be12b309cd7dc5fc2c55a2b9ce785b`; all three FAB resources normalized successfully. Prices were fresh while address/pool snapshots were stale; this distinction is retained. No user wallet or production database was used in this check.
 - Code review found and retested three fixes: switching must preserve market/network backoff, pending indexing must not become an empty-wallet claim, and null/boolean/empty history points must not become zero power. Follow-up review reported no remaining blocking issue.
-- `npm run tauri build -- --bundles app` produced an Apple Silicon v0.3.0 application at `src-tauri/target/release/bundle/macos/TapeOut Live.app`; bundle metadata was checked. The installed `/Applications/TapeOut Live.app` remains v0.2.0 and was not replaced or launched with production data by this iteration.
+- `npm run tauri build -- --bundles app` produced an Apple Silicon v0.3.0 application at `src-tauri/target/release/bundle/macos/TapeOut Live.app`; bundle metadata was checked. At the initial pre-publication check, the installed application remained v0.2.0. Subsequent user-authorized delivery is recorded below.
 - No Windows CI run, Windows installation test, v0.3 native visual inspection, or new dual-monitor hardware validation was performed. The v0.2 checks below must not be interpreted as v0.3 device acceptance evidence.
 - FAB lists are limited to the first 100 miners, with loaded/indexed counts for incomplete lists. Unrecognized FAB events remain generic wallet events and never trigger BEM champion alerts.
 - These checks were completed locally on `codex/fab-monitoring` before publication. The user subsequently authorized merging to main and replacing the local installation on 2026-10-17; that delivery does not establish native visual or dual-monitor acceptance.
+
+### User-authorized delivery — 2026-10-17
+
+- PR #2 merged to GitHub main as `85d22d30343cba73463e888a3550976784bac9b5`; local main was synchronized and the forty deterministic tests passed again on the merged tree.
+- The old installed process was stopped. The original application, complete data directory, and a consistent SQLite snapshot were retained in a dedicated persistent application-support backup directory.
+- `/Applications/TapeOut Live.app` was replaced with v0.3.0 and launched from that exact path. Its binary SHA-256 matched the verified local build. A comparison of every pre-existing settings field reported zero changes; the saved account list survived and the new project preference defaulted to BEM.
+- The macOS PR CI job succeeded. The Windows job was still running at handoff. Native visual, BEM/FAB interaction, and dual-monitor acceptance remain assigned to the user's real-device test.
 
 ## v0.2 iteration
 
