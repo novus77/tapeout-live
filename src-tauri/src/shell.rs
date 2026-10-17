@@ -12,6 +12,47 @@ use tauri::{Emitter, Manager, State, WindowEvent};
 use tauri_plugin_autostart::ManagerExt;
 use tauri_plugin_notification::NotificationExt;
 struct Client(reqwest::Client);
+fn tray_menu(
+    app: &tauri::AppHandle,
+    language: &str,
+) -> tauri::Result<tauri::menu::Menu<tauri::Wry>> {
+    use tauri::menu::{Menu, MenuItem};
+    let english = language == "en";
+    let open = MenuItem::with_id(
+        app,
+        "open_panel",
+        if english {
+            "Open TapeOut Live"
+        } else {
+            "打开 TapeOut Live"
+        },
+        true,
+        None::<&str>,
+    )?;
+    let version = MenuItem::with_id(
+        app,
+        "app_version",
+        format!(
+            "{} {}",
+            if english { "Version" } else { "当前版本" },
+            app.package_info().version
+        ),
+        false,
+        None::<&str>,
+    )?;
+    let quit = MenuItem::with_id(
+        app,
+        "quit_app",
+        if english {
+            "Quit TapeOut Live"
+        } else {
+            "退出 TapeOut Live"
+        },
+        true,
+        None::<&str>,
+    )?;
+    Menu::with_items(app, &[&open, &version, &quit])
+}
 #[tauri::command]
 fn get_appearance(state: State<AppearanceState>) -> NativeAppearance {
     *state.current.lock().unwrap()
@@ -73,7 +114,18 @@ fn update_settings(
         state.settings = settings.clone();
     }
     let handle = app.clone();
-    let _ = app.run_on_main_thread(move || appearance::update(&handle));
+    let language = settings.language.clone();
+    let language_changed = settings.language != previous.language;
+    let _ = app.run_on_main_thread(move || {
+        appearance::update(&handle);
+        if language_changed {
+            if let Some(tray) = handle.tray_by_id("monitor") {
+                if let Ok(menu) = tray_menu(&handle, &language) {
+                    let _ = tray.set_menu(Some(menu));
+                }
+            }
+        }
+    });
     let _ = app.emit("snapshot_updated", ());
     Ok(settings)
 }
@@ -297,10 +349,18 @@ pub fn run() {
                 tauri::image::Image::from_bytes(include_bytes!("../icons/tray-template.png"))?;
             #[cfg(not(target_os = "macos"))]
             let tray_icon = tauri::image::Image::from_bytes(include_bytes!("../icons/tray.png"))?;
+            let menu = tray_menu(app.handle(), &engine.lock().unwrap().settings.language)?;
             tauri::tray::TrayIconBuilder::with_id("monitor")
                 .icon(tray_icon)
                 .icon_as_template(true)
                 .tooltip("TapeOut Live")
+                .menu(&menu)
+                .show_menu_on_left_click(false)
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "open_panel" => show_panel(app, None, false),
+                    "quit_app" => app.exit(0),
+                    _ => {}
+                })
                 .on_tray_icon_event(|tray, event| {
                     if let tauri::tray::TrayIconEvent::Click {
                         button: tauri::tray::MouseButton::Left,
