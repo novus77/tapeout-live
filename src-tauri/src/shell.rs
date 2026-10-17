@@ -1,4 +1,5 @@
 use crate::{
+    appearance::{self, AppearanceState, NativeAppearance},
     domain::{canonical_settings, Settings},
     provider,
     runtime::{self, Shared},
@@ -11,6 +12,14 @@ use tauri::{Emitter, Manager, State, WindowEvent};
 use tauri_plugin_autostart::ManagerExt;
 use tauri_plugin_notification::NotificationExt;
 struct Client(reqwest::Client);
+#[tauri::command]
+fn get_appearance(state: State<AppearanceState>) -> NativeAppearance {
+    *state.current.lock().unwrap()
+}
+#[tauri::command]
+fn present_panel(app: tauri::AppHandle) {
+    show_panel(&app, None, false);
+}
 #[tauri::command]
 fn get_dashboard(state: State<Shared>) -> Result<Value, String> {
     state.lock().map_err(|e| e.to_string())?.dashboard()
@@ -36,14 +45,6 @@ fn update_settings(
 ) -> Result<Settings, String> {
     let settings = canonical_settings(settings)?;
     let previous = state.lock().map_err(|e| e.to_string())?.settings.clone();
-    if settings.autostart != previous.autostart {
-        if settings.autostart {
-            app.autolaunch().enable()
-        } else {
-            app.autolaunch().disable()
-        }
-        .map_err(|e| e.to_string())?;
-    }
     if settings.notifications && !previous.notifications {
         app.notification()
             .request_permission()
@@ -51,12 +52,26 @@ fn update_settings(
     }
     {
         let mut state = state.lock().map_err(|e| e.to_string())?;
-        state.store.save_settings(&settings)?;
+        crate::settings_commit::commit_with_autostart(
+            &previous,
+            &settings,
+            |enabled| {
+                if enabled {
+                    app.autolaunch().enable()
+                } else {
+                    app.autolaunch().disable()
+                }
+                .map_err(|e| e.to_string())
+            },
+            |value| state.store.save_settings(value),
+        )?;
         if settings.wallet != state.settings.wallet || settings.project != state.settings.project {
             state.reset_wallet();
         }
         state.settings = settings.clone();
     }
+    let handle = app.clone();
+    let _ = app.run_on_main_thread(move || appearance::update(&handle));
     let _ = app.emit("snapshot_updated", ());
     Ok(settings)
 }
@@ -265,17 +280,15 @@ pub fn run() {
             let client = provider::client()?;
             app.manage(engine.clone());
             app.manage(Client(client.clone()));
-            let mut pixels = vec![0u8; 32 * 32 * 4];
-            for y in 5..27 {
-                for x in 5..27 {
-                    if !(9..=22).contains(&x) || !(9..=22).contains(&y) || (14..18).contains(&x) {
-                        let i = (y * 32 + x) * 4;
-                        pixels[i..i + 4].copy_from_slice(&[75, 196, 166, 255]);
-                    }
-                }
-            }
+            app.manage(AppearanceState::default());
+            appearance::update(app.handle());
+            #[cfg(target_os = "macos")]
+            let tray_icon =
+                tauri::image::Image::from_bytes(include_bytes!("../icons/tray-template.png"))?;
+            #[cfg(not(target_os = "macos"))]
+            let tray_icon = tauri::image::Image::from_bytes(include_bytes!("../icons/tray.png"))?;
             tauri::tray::TrayIconBuilder::with_id("monitor")
-                .icon(tauri::image::Image::new_owned(pixels, 32, 32))
+                .icon(tray_icon)
                 .icon_as_template(true)
                 .tooltip("TapeOut Live")
                 .on_tray_icon_event(|tray, event| {
@@ -291,10 +304,15 @@ pub fn run() {
                 })
                 .build(app)?;
             runtime::launch(app.handle().clone(), engine.clone(), client);
-            show_panel(app.handle(), None, false);
+            appearance::launch(app.handle().clone());
             Ok(())
         })
         .on_window_event(|window, event| match event {
+            WindowEvent::ThemeChanged(_) if window.label() == "main" => {
+                let app = window.app_handle().clone();
+                let handle = app.clone();
+                let _ = app.run_on_main_thread(move || appearance::update(&handle));
+            }
             WindowEvent::CloseRequested { api, .. } => {
                 api.prevent_close();
                 let _ = window.hide();
@@ -321,6 +339,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             get_dashboard,
+            get_appearance,
+            present_panel,
             get_history,
             update_settings,
             select_account,

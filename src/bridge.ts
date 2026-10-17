@@ -15,6 +15,8 @@ export type Settings = {
   accounts: Account[];
   language: Language;
   project: Project;
+  theme: "light" | "dark";
+  followSystemTheme: boolean;
 };
 export type Snapshot = {
   resource: string;
@@ -51,23 +53,53 @@ export const defaults: Settings = {
   accounts: [],
   language: "zh",
   project: "bem",
+  theme: "light",
+  followSystemTheme: false,
 };
 export const native = "__TAURI_INTERNALS__" in window;
+let previewSettings: Settings = structuredClone(defaults);
 export async function command<T>(
   name: string,
   args: Record<string, unknown> = {},
 ): Promise<T> {
   if (!native) {
+    if (name === "update_settings") {
+      previewSettings = structuredClone(args.settings as Settings);
+      return structuredClone(previewSettings) as T;
+    }
+    if (name === "select_account") {
+      const account = previewSettings.accounts.find(
+        (account) => account.address === args.address,
+      );
+      if (!account) throw new Error("Preview account not found.");
+      previewSettings = {
+        ...previewSettings,
+        wallet: account.address,
+        alias: account.name,
+      };
+      return structuredClone(previewSettings) as T;
+    }
+    if (name === "select_project") {
+      if (args.project !== "bem" && args.project !== "fab")
+        throw new Error("Unknown preview project.");
+      previewSettings = { ...previewSettings, project: args.project };
+      return structuredClone(previewSettings) as T;
+    }
     if (name === "get_dashboard")
       return {
-        settings: defaults,
+        settings: structuredClone(previewSettings),
         address: null,
         market: null,
         network: null,
         jobs: {},
       } as T;
     if (name === "get_history") return [] as T;
-    if (name === "set_network_visible" || name === "hide_panel")
+    if (
+      name === "set_network_visible" ||
+      name === "hide_panel" ||
+      name === "refresh_resource" ||
+      name === "present_panel"
+    )
       return undefined as T;
     throw new Error("Run the desktop application to connect to TapeOutScan.");
   }

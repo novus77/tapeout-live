@@ -35,6 +35,8 @@ pub struct Settings {
     pub accounts: Vec<Account>,
     pub language: String,
     pub project: String,
+    pub theme: String,
+    pub follow_system_theme: bool,
 }
 impl Default for Settings {
     fn default() -> Self {
@@ -49,6 +51,8 @@ impl Default for Settings {
             accounts: vec![],
             language: "zh".into(),
             project: "bem".into(),
+            theme: "light".into(),
+            follow_system_theme: false,
         }
     }
 }
@@ -107,6 +111,9 @@ pub fn valid_wallet(wallet: &str) -> bool {
         && wallet[2..].bytes().all(|c| c.is_ascii_hexdigit())
 }
 pub fn validate_settings(settings: &Settings) -> Result<(), String> {
+    if !["light", "dark"].contains(&settings.theme.as_str()) {
+        return Err("Unsupported appearance theme.".into());
+    }
     if !["bem", "fab"].contains(&settings.project.as_str()) {
         return Err("Unsupported monitoring project.".into());
     }

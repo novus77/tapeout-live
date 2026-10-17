@@ -1,6 +1,6 @@
 # TapeOut Live: Frosted Panel and Appearance Preferences — SPAC v4
 
-Status: Visual prototype approved by the user on 2026-10-17. This written specification is submitted for review before production implementation. This PR initially contains documentation and reference assets only.
+Status: Visual prototype and written specification approved by the user on 2026-10-17. Implementation is authorized on PR #3; merging and local installation are separate authorization checkpoints.
 
 Base: `main` at `9993bdb` (installed application v0.3.0). This specification supersedes the layout and settings placement in the v0.2 and FAB specifications, but not their provider, precision, freshness, or account/project isolation contracts.
 

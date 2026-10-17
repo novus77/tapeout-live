@@ -1,11 +1,3 @@
-import {
-  CopyIcon,
-  CheckIcon,
-  GlobeIcon,
-  LightningBoltIcon,
-  CubeIcon,
-  ActivityLogIcon,
-} from "@radix-ui/react-icons";
 import { useState } from "react";
 import { object, rows, type Dashboard, type Snapshot } from "./bridge";
 import {
@@ -16,9 +8,10 @@ import {
   type Message,
 } from "./i18n";
 import { circuitTotals, formatMetric, type Row } from "./metrics";
-import { Metric, Sparkline } from "./components";
+import { Metric } from "./components";
 import { FabNetwork } from "./FabNetwork";
 import { SnapshotTime } from "./SnapshotTime";
+import { Icon } from "./Icons";
 export function NetworkSection({ data }: { data: Dashboard }) {
   const { language, interval } = data.settings,
     t = translator(language),
@@ -29,10 +22,7 @@ export function NetworkSection({ data }: { data: Dashboard }) {
   return (
     <section className="network-section" aria-labelledby="network-title">
       <div className="section-title">
-        <h2 id="network-title">
-          <GlobeIcon />
-          {t("network")}
-        </h2>
+        <h2 id="network-title">{t("network")}</h2>
         <SnapshotTime
           snapshot={data.market}
           language={language}
@@ -65,26 +55,6 @@ export function NetworkSection({ data }: { data: Dashboard }) {
           </b>
         </span>
       </div>
-      <div className="material-strip" aria-label={t("materials")}>
-        <span>
-          BNB <b>${formatMetric(market.bnb_usd)}</b>
-        </span>
-        {(
-          [
-            ["T · N", "tapeout_nand_bnb"],
-            ["T · L", "tapeout_latch_bnb"],
-            ["B · N", "behemoth_nand_bnb"],
-            ["B · L", "behemoth_latch_bnb"],
-          ] as const
-        ).map(([label, key]) => (
-          <span key={key} title={`${t("materials")} · ${key} · BNB`}>
-            {label} <b>{formatMetric(market[key], 4)}</b>
-            {object(object(market.transistorQuotes)[key]).stale === true && (
-              <em>{t("stale")}</em>
-            )}
-          </span>
-        ))}
-      </div>
       <div className="source-note">
         {t("networkPower")} ·{" "}
         <SnapshotTime
@@ -101,11 +71,13 @@ export function WalletSection({
   select,
   onError,
   disabled = false,
+  openSettings,
 }: {
   data: Dashboard;
   select: (address: string) => Promise<void>;
   onError: (error: string) => void;
   disabled?: boolean;
+  openSettings?: () => void;
 }) {
   const { language, accounts, wallet, project } = data.settings,
     fab = project === "fab",
@@ -129,10 +101,7 @@ export function WalletSection({
   return (
     <section className="wallet-section" aria-labelledby="overview-title">
       <div className="section-title">
-        <h2 id="overview-title">
-          <LightningBoltIcon />
-          {t("overview")}
-        </h2>
+        <h2 id="overview-title">{t("overview")}</h2>
         {accounts.length > 0 && (
           <select
             className="account-selector"
@@ -156,6 +125,9 @@ export function WalletSection({
         <div className="empty">
           <h3>{t("noAccount")}</h3>
           <p>{t("noAccountHelp")}</p>
+          <button className="primary" onClick={openSettings}>
+            {t("add")}
+          </button>
         </div>
       ) : (
         <>
@@ -166,9 +138,10 @@ export function WalletSection({
             <button
               className="icon-button"
               aria-label={copied ? t("copied") : t("copy")}
+              title={copied ? t("copied") : t("copy")}
               onClick={() => void copy()}
             >
-              {copied ? <CheckIcon /> : <CopyIcon />}
+              <Icon name="copy" />
             </button>
             <SnapshotTime
               snapshot={data.address}
@@ -181,7 +154,6 @@ export function WalletSection({
               title={t("power")}
               value={summary.total_hashrate}
               unit="H"
-              icon={<LightningBoltIcon />}
               accent
             />
             <Metric
@@ -194,35 +166,14 @@ export function WalletSection({
               unit={fab ? "FAB" : "BEM"}
               digits={fab ? 8 : 2}
               note={t("estimate")}
-              icon={<ActivityLogIcon />}
               accent
             />
-            <Metric
-              title={t("miners")}
-              value={summary.miner_count}
-              icon={<CubeIcon />}
-            />
+            <Metric title={t("miners")} value={summary.miner_count} />
             <Metric
               title={t("optimal")}
               value={fab ? summary.optimal : totals.optimal}
             />
           </div>
-          {fab ? (
-            <div className="split-labels">
-              <span>
-                {t("running")} <b>{formatMetric(summary.active, 0)}</b>
-              </span>
-            </div>
-          ) : (
-            <div className="split-labels">
-              <span>
-                {t("verified")} <b>{formatMetric(totals.verified, 0)} H</b>
-              </span>
-              <span>
-                {t("unverified")} <b>{formatMetric(totals.unverified, 0)} H</b>
-              </span>
-            </div>
-          )}
           <div className="balance-row">
             <span>
               {t(fab ? "fabBalance" : "bemBalance")}{" "}
@@ -236,7 +187,6 @@ export function WalletSection({
               </span>
             )}
           </div>
-          {fab && <PowerHistory snapshot={data.address} language={language} />}
           <div className="source-note">
             {t("balanceAge")} ·{" "}
             {assets.observed_at
@@ -253,31 +203,6 @@ export function WalletSection({
         </>
       )}
     </section>
-  );
-}
-function PowerHistory({
-  snapshot,
-  language,
-}: {
-  snapshot: Snapshot | null;
-  language: Language;
-}) {
-  const t = translator(language),
-    points = rows(object(snapshot?.data.hashrateHistory).points);
-  const values = points
-    .filter((p) =>
-      typeof p.weight === "number"
-        ? Number.isFinite(p.weight) && p.weight >= 0
-        : typeof p.weight === "string" && /^\d+(\.\d+)?$/.test(p.weight),
-    )
-    .map((p) => Number(p.weight))
-    .filter(Number.isFinite);
-  if (values.length < 2) return null;
-  return (
-    <div className="power-history">
-      <span className="helper">{t("powerHistory")}</span>
-      <Sparkline values={values} label={t("powerHistory")} />
-    </div>
   );
 }
 export function CircuitSection({

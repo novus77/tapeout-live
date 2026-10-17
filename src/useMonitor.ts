@@ -21,7 +21,9 @@ export function useMonitor() {
   const expectedWallet = useRef<string | null>(null);
   const expectedProject = useRef<Project | null>(null);
   const [switching, setSwitching] = useState(false);
+  const [ready, setReady] = useState(false);
   const selection = useRef(0);
+  const pending = useRef(false);
   const load = useCallback(async () => {
     const ticket = ++revision.current;
     try {
@@ -33,11 +35,13 @@ export function useMonitor() {
         (expectedProject.current === null ||
           next.settings.project === expectedProject.current)
       ) {
-        setData(next);
+        setData({ ...next, settings: { ...defaults, ...next.settings } });
+        setReady(true);
         setError("");
       }
     } catch (e) {
       if (ticket === revision.current) setError(String(e));
+      if (ticket === revision.current) setReady(true);
     }
   }, []);
   useEffect(() => {
@@ -87,16 +91,25 @@ export function useMonitor() {
     [load],
   );
   const save = async (settings: Settings) => {
+    if (pending.current)
+      throw new Error("A settings change is already pending.");
+    pending.current = true;
     setSwitching(true);
     try {
       const saved = await command<Settings>("update_settings", { settings });
       apply(saved);
       return saved;
+    } catch (e) {
+      setError(String(e));
+      throw e;
     } finally {
+      pending.current = false;
       setSwitching(false);
     }
   };
   const select = async (address: string) => {
+    if (pending.current) return;
+    pending.current = true;
     setSwitching(true);
     const ticket = ++selection.current;
     ++revision.current;
@@ -129,10 +142,15 @@ export function useMonitor() {
       }
       throw error;
     } finally {
-      if (ticket === selection.current) setSwitching(false);
+      if (ticket === selection.current) {
+        pending.current = false;
+        setSwitching(false);
+      }
     }
   };
   const selectProject = async (project: Project) => {
+    if (pending.current) return;
+    pending.current = true;
     const ticket = ++selection.current;
     ++revision.current;
     setSwitching(true);
@@ -158,7 +176,10 @@ export function useMonitor() {
       }
       throw error;
     } finally {
-      if (ticket === selection.current) setSwitching(false);
+      if (ticket === selection.current) {
+        pending.current = false;
+        setSwitching(false);
+      }
     }
   };
   return {
@@ -170,5 +191,6 @@ export function useMonitor() {
     select,
     selectProject,
     switching,
+    ready,
   };
 }
