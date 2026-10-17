@@ -139,9 +139,9 @@ fn select_account(
     if !settings
         .accounts
         .iter()
-        .any(|a| a.address.eq_ignore_ascii_case(&address))
+        .any(|a| a.address.eq_ignore_ascii_case(&address) && a.supports(&settings.project))
     {
-        return Err("Selected wallet is not saved.".into());
+        return Err("Selected wallet is not assigned to this mining project.".into());
     }
     settings.wallet = address;
     update_settings(app, state, settings)

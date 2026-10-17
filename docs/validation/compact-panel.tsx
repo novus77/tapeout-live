@@ -1,7 +1,12 @@
 // Synthetic visual data; this entry point never loads the installed profile.
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
-import { defaults, type Dashboard, type Settings } from "../../src/bridge";
+import {
+  defaults,
+  settingsForProject,
+  type Dashboard,
+  type Settings,
+} from "../../src/bridge";
 import { NetworkSection, WalletSection } from "../../src/MonitorSections";
 import { SettingsPanel } from "../../src/SettingsPanel";
 import { BrandMark, Icon } from "../../src/Icons";
@@ -69,7 +74,7 @@ function Preview() {
     },
   };
   const save = async (next: Settings) => {
-    setSettings(next);
+    setSettings(settingsForProject(next));
     return next;
   };
   return (
@@ -89,7 +94,9 @@ function Preview() {
               <button
                 key={project}
                 aria-pressed={settings.project === project}
-                onClick={() => setSettings({ ...settings, project })}
+                onClick={() =>
+                  setSettings(settingsForProject(settings, project))
+                }
               >
                 {project.toUpperCase()}
               </button>

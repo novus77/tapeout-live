@@ -190,7 +190,15 @@ impl Engine {
             "fab_market",
             "fab_network",
         ] {
-            if resource.ends_with("address") && wallet.is_empty() {
+            if resource.ends_with("address")
+                && !self
+                    .settings
+                    .wallet_supports(if resource.starts_with("fab_") {
+                        "fab"
+                    } else {
+                        "bem"
+                    })
+            {
                 continue;
             }
             let request = self.admit_for_wallet(resource.into(), true, now, &wallet);
@@ -549,6 +557,37 @@ mod tests {
             retry_after: Some(120),
             terminal: false,
         })
+    }
+    #[test]
+    fn manual_batch_skips_the_selected_accounts_unassigned_project() {
+        for project in ["bem", "fab"] {
+            let (_dir, mut engine) = engine();
+            let wallet = "0x0000000000000000000000000000000000000001";
+            engine.settings = crate::domain::canonical_settings(
+                serde_json::from_value(json!({
+                    "project": project,
+                    "wallet": wallet,
+                    "accounts": [{"address":wallet,"name":"Only","projects":[project]}]
+                }))
+                .unwrap(),
+            )
+            .unwrap();
+            let requests = engine.admit_batch(1000);
+            assert_eq!(requests.len(), 5);
+            let address_requests: Vec<_> = requests
+                .iter()
+                .filter(|request| request.resource.ends_with("address"))
+                .collect();
+            assert_eq!(address_requests.len(), 1);
+            assert_eq!(
+                address_requests[0].resource,
+                if project == "fab" {
+                    "fab_address"
+                } else {
+                    "address"
+                }
+            );
+        }
     }
     #[test]
     fn batch_captures_both_projects_and_normalized_wallet_atomically() {

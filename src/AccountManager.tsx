@@ -1,5 +1,10 @@
 import { useState } from "react";
-import { type Settings } from "./bridge";
+import {
+  accountProjects,
+  settingsForProject,
+  type Project,
+  type Settings,
+} from "./bridge";
 import { translator } from "./i18n";
 import { Icon } from "./Icons";
 export function AccountManager({
@@ -21,10 +26,36 @@ export function AccountManager({
     [removing, setRemoving] = useState(""),
     [editing, setEditing] = useState(""),
     [editName, setEditName] = useState("");
+  const [projects, setProjects] = useState<Project[]>([settings.project]);
+  const [editProjects, setEditProjects] = useState<Project[]>([]);
+  const projectControl = (
+    value: Project[],
+    change: (projects: Project[]) => void,
+  ) => (
+    <fieldset className="account-projects" disabled={disabled}>
+      <legend>{t("miningProjects")}</legend>
+      {(["bem", "fab"] as const).map((project) => (
+        <label key={project}>
+          <input
+            type="checkbox"
+            checked={value.includes(project)}
+            onChange={(event) =>
+              change(
+                event.target.checked
+                  ? [...value, project]
+                  : value.filter((item) => item !== project),
+              )
+            }
+          />
+          {project.toUpperCase()}
+        </label>
+      ))}
+    </fieldset>
+  );
   async function persist(next: Settings) {
     setError("");
     try {
-      await save(next);
+      await save(settingsForProject(next));
       return true;
     } catch (e) {
       setError(String(e).replace(/^Error: /, ""));
@@ -32,6 +63,10 @@ export function AccountManager({
     }
   }
   async function add() {
+    if (!projects.length) {
+      setError(t("chooseMiningProject"));
+      return;
+    }
     const value = address.trim().toLowerCase(),
       alias = name.trim();
     const invalid = !/^0x[0-9a-f]{40}$/.test(value)
@@ -50,7 +85,13 @@ export function AccountManager({
     if (
       await persist({
         ...settings,
-        accounts: [...settings.accounts, { address: value, name: alias }],
+        accounts: [
+          ...settings.accounts,
+          { address: value, name: alias, projects },
+        ],
+        project: projects.includes(settings.project)
+          ? settings.project
+          : projects[0],
         wallet: value,
         alias,
       })
@@ -87,6 +128,7 @@ export function AccountManager({
           disabled={disabled || adding || settings.accounts.length >= 20}
           onClick={() => {
             setAdding(true);
+            setProjects([settings.project]);
             setError("");
           }}
         >
@@ -101,7 +143,10 @@ export function AccountManager({
               <button
                 className="saved-account"
                 aria-pressed={settings.wallet === account.address}
-                disabled={disabled}
+                disabled={
+                  disabled ||
+                  !accountProjects(account).includes(settings.project)
+                }
                 onClick={() =>
                   void select(account.address).catch((e) => setError(String(e)))
                 }
@@ -114,6 +159,11 @@ export function AccountManager({
                   <code>
                     {account.address.slice(0, 8)}…{account.address.slice(-6)}
                   </code>
+                  <span className="account-project-tags">
+                    {accountProjects(account)
+                      .map((project) => project.toUpperCase())
+                      .join(" / ")}
+                  </span>
                 </span>
                 {settings.wallet === account.address && (
                   <span className="selected-label">{t("selected")}</span>
@@ -126,6 +176,7 @@ export function AccountManager({
                 onClick={() => {
                   setEditing(account.address);
                   setEditName(account.name);
+                  setEditProjects(accountProjects(account));
                   setError("");
                 }}
               >
@@ -151,6 +202,10 @@ export function AccountManager({
                   onSubmit={(event) => {
                     event.preventDefault();
                     const alias = editName.trim();
+                    if (!editProjects.length) {
+                      setError(t("chooseMiningProject"));
+                      return;
+                    }
                     if ([...alias].length > 40) {
                       setError(t("nameLimit"));
                       return;
@@ -159,7 +214,7 @@ export function AccountManager({
                       ...settings,
                       accounts: settings.accounts.map((a) =>
                         a.address === account.address
-                          ? { ...a, name: alias }
+                          ? { ...a, name: alias, projects: editProjects }
                           : a,
                       ),
                       alias:
@@ -184,6 +239,7 @@ export function AccountManager({
                     {t("address")}
                     <input readOnly value={account.address} />
                   </label>
+                  {projectControl(editProjects, setEditProjects)}
                   <div className="form-actions">
                     <button
                       type="button"
@@ -232,6 +288,7 @@ export function AccountManager({
               onChange={(e) => setAddress(e.target.value)}
             />
           </label>
+          {projectControl(projects, setProjects)}
           <div className="form-actions">
             <button
               type="button"

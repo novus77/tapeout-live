@@ -2,8 +2,27 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { Row } from "./metrics";
 import type { Language } from "./i18n";
-export type Account = { address: string; name: string };
+export type Account = { address: string; name: string; projects?: Project[] };
 export type Project = "bem" | "fab";
+export const accountProjects = (account: Account): Project[] =>
+  account.projects ?? ["bem", "fab"];
+export function settingsForProject(
+  settings: Settings,
+  project = settings.project,
+): Settings {
+  const accounts = settings.accounts.filter((account) =>
+    accountProjects(account).includes(project),
+  );
+  const selected =
+    accounts.find((account) => account.address === settings.wallet) ??
+    accounts[0];
+  return {
+    ...settings,
+    project,
+    wallet: selected?.address ?? "",
+    alias: selected?.name ?? "",
+  };
+}
 export type Settings = {
   wallet: string;
   alias: string;
@@ -86,7 +105,13 @@ export async function command<T>(
         ]
           .filter(
             (resource) =>
-              previewSettings.wallet || !resource.endsWith("address"),
+              !resource.endsWith("address") ||
+              (!!previewSettings.wallet &&
+                accountProjects(
+                  previewSettings.accounts.find(
+                    (account) => account.address === previewSettings.wallet,
+                  )!,
+                ).includes(resource.startsWith("fab_") ? "fab" : "bem")),
           )
           .map((resource) => ({
             resource,
@@ -97,14 +122,20 @@ export async function command<T>(
       return structuredClone(previewBatch) as T;
     }
     if (name === "update_settings") {
-      previewSettings = structuredClone(args.settings as Settings);
+      previewSettings = settingsForProject(
+        structuredClone(args.settings as Settings),
+      );
       return structuredClone(previewSettings) as T;
     }
     if (name === "select_account") {
       const account = previewSettings.accounts.find(
         (account) => account.address === args.address,
       );
-      if (!account) throw new Error("Preview account not found.");
+      if (
+        !account ||
+        !accountProjects(account).includes(previewSettings.project)
+      )
+        throw new Error("Preview account is not assigned to this project.");
       previewSettings = {
         ...previewSettings,
         wallet: account.address,
@@ -115,7 +146,7 @@ export async function command<T>(
     if (name === "select_project") {
       if (args.project !== "bem" && args.project !== "fab")
         throw new Error("Unknown preview project.");
-      previewSettings = { ...previewSettings, project: args.project };
+      previewSettings = settingsForProject(previewSettings, args.project);
       return structuredClone(previewSettings) as T;
     }
     if (name === "get_dashboard")

@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { object, rows, type Dashboard, type Snapshot } from "./bridge";
+import {
+  accountProjects,
+  object,
+  rows,
+  type Dashboard,
+  type Snapshot,
+} from "./bridge";
 import {
   translator,
   locale,
@@ -86,6 +92,12 @@ export function WalletSection({
     summary = object(data.address?.data.summary),
     assets = object(data.address?.data.assets),
     [copied, setCopied] = useState(false);
+  const matchingAccounts = accounts.filter((account) =>
+    accountProjects(account).includes(project),
+  );
+  const hasWallet = matchingAccounts.some(
+    (account) => account.address === wallet,
+  );
   const totals = circuitTotals(
     rows(data.address?.data.circuits),
     Number(summary.miner_count),
@@ -114,9 +126,9 @@ export function WalletSection({
     <section className="wallet-section" aria-labelledby="overview-title">
       <div className="section-title">
         <h2 id="overview-title">{t("overview")}</h2>
-        {accounts.length > 0 && (
+        {matchingAccounts.length > 0 && (
           <AccountSelector
-            accounts={accounts}
+            accounts={matchingAccounts}
             wallet={wallet}
             language={language}
             disabled={disabled}
@@ -125,10 +137,10 @@ export function WalletSection({
           />
         )}
       </div>
-      {!wallet ? (
+      {!hasWallet ? (
         <div className="empty">
-          <h3>{t("noAccount")}</h3>
-          <p>{t("noAccountHelp")}</p>
+          <h3>{t(accounts.length ? "noProjectAccount" : "noAccount")}</h3>
+          <p>{t(accounts.length ? "noProjectAccountHelp" : "noAccountHelp")}</p>
           <button className="primary" onClick={openSettings}>
             {t("add")}
           </button>

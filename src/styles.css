@@ -417,6 +417,32 @@ h2 {
   flex-shrink: 0;
   margin-right: 8px;
 }
+.account-project-tags {
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 600;
+}
+.account-projects {
+  display: flex;
+  gap: 16px;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.account-projects legend {
+  color: var(--muted);
+  font-size: 11px;
+}
+.account-projects label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.account-projects input {
+  width: auto;
+  accent-color: var(--accent);
+}
 .language-divider {
   align-self: center;
   color: var(--muted);

@@ -21,6 +21,7 @@ fn duplicate_accounts_and_invalid_selection_are_rejected() {
     let account = Account {
         address: address.into(),
         name: "One".into(),
+        projects: vec!["bem".into(), "fab".into()],
     };
     assert!(canonical_settings(Settings {
         wallet: address.into(),
