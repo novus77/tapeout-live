@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { command, object, rows, type Dashboard } from "./bridge";
 import { locale, translator } from "./i18n";
 export function historyPoints(input: unknown[], now = Date.now()) {
+  const occurrences = new Map<string, number>();
   return input
     .flatMap((value) => {
       const point = object(value),
@@ -26,7 +27,13 @@ export function historyPoints(input: unknown[], now = Date.now()) {
         ? [{ time, power, raw: String(raw) }]
         : [];
     })
-    .sort((a, b) => a.time - b.time);
+    .sort((a, b) => a.time - b.time)
+    .map((point) => {
+      const identity = `${point.time}:${point.raw}`;
+      const ordinal = occurrences.get(identity) ?? 0;
+      occurrences.set(identity, ordinal + 1);
+      return { ...point, id: `${identity}:${ordinal}` };
+    });
 }
 export function PowerHistory({
   data,
@@ -44,7 +51,7 @@ export function PowerHistory({
   }>({ key: "", points: [] });
   const [inspection, setInspection] = useState<{
     key: string;
-    time: number;
+    id: string;
   } | null>(null);
   useEffect(() => setInspection(null), [key, suspended]);
   const owned =
@@ -95,7 +102,7 @@ export function PowerHistory({
     inspection?.key === key
       ? Math.max(
           0,
-          points.findIndex((p) => p.time === inspection.time),
+          points.findIndex((p) => p.id === inspection.id),
         )
       : Math.max(0, points.length - 1);
   const inspected = points[selectedIndex];
@@ -111,8 +118,19 @@ export function PowerHistory({
     `${point.raw} H · ${stamp(point.time)}`;
   const x = (time: number) => 66 + ((time - points[0].time) / span) * 308;
   const y = (power: number) => 66 - ((power - low) / range) * 60;
+  const significantDigits = flat
+    ? 3
+    : Math.min(
+        21,
+        Math.max(
+          3,
+          Math.ceil(
+            Math.log10(Math.max(Math.abs(min), Math.abs(max)) / range),
+          ) + 2,
+        ),
+      );
   const axis = (value: number) =>
-    `${new Intl.NumberFormat(locale(language), { notation: Math.abs(value) >= 1000000 ? "compact" : "standard", maximumFractionDigits: 2 }).format(value)} H`;
+    `${new Intl.NumberFormat(locale(language), { notation: Math.abs(value) >= 1000000 ? "compact" : "standard", maximumSignificantDigits: significantDigits }).format(value)} H`;
   return (
     <section className="power-history">
       <div className="section-title">
@@ -158,7 +176,7 @@ export function PowerHistory({
                         : null;
               if (next !== null) {
                 event.preventDefault();
-                setInspection({ key, time: points[next].time });
+                setInspection({ key, id: points[next].id });
               }
             }}
             onPointerMove={(event) => {
@@ -173,7 +191,7 @@ export function PowerHistory({
                     : best,
                 0,
               );
-              setInspection({ key, time: points[nearest].time });
+              setInspection({ key, id: points[nearest].id });
             }}
           >
             {(flat ? [min] : [max, (min + max) / 2, min]).map((value, i) => (

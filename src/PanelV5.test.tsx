@@ -258,6 +258,52 @@ it("renders one actual flat-series axis label with an interior padded line", () 
   );
 });
 
+it("inspects every sample when observation timestamps are duplicated", () => {
+  const data = fixture(),
+    now = Date.now() / 1000;
+  data.address!.data.hashrateHistory = {
+    points: [
+      { time: now - 10, value: "1" },
+      { time: now - 10, value: "2" },
+      { time: now, value: "3" },
+    ],
+  };
+  const { rerender } = render(<PowerHistory data={data} />);
+  const chart = screen.getByRole("slider");
+  fireEvent.keyDown(chart, { key: "Home" });
+  fireEvent.keyDown(chart, { key: "ArrowRight" });
+  expect(chart.getAttribute("aria-valuenow")).toBe("1");
+  expect(chart.getAttribute("aria-valuetext")).toContain("2 H");
+  data.address!.data.hashrateHistory = {
+    points: [
+      { time: now - 20, value: "0" },
+      { time: now - 10, value: "1" },
+      { time: now - 10, value: "2" },
+      { time: now, value: "3" },
+    ],
+  };
+  rerender(<PowerHistory data={{ ...data }} />);
+  expect(chart.getAttribute("aria-valuenow")).toBe("2");
+  expect(chart.getAttribute("aria-valuetext")).toContain("2 H");
+});
+
+it("keeps small decimal domain labels distinct instead of rounding them to zero", () => {
+  const data = fixture(),
+    now = Date.now() / 1000;
+  data.address!.data.hashrateHistory = {
+    points: [
+      { time: now - 10, value: "0.001" },
+      { time: now, value: "0.002" },
+    ],
+  };
+  const { container } = render(<PowerHistory data={data} />);
+  expect(
+    [...container.querySelectorAll(".chart-axis")].map(
+      (label) => label.textContent,
+    ),
+  ).toEqual(["0.002 H", "0.0015 H", "0.001 H"]);
+});
+
 it("keeps the editor open on save failure and enforces Unicode rename limits", async () => {
   const data = fixture(),
     save = vi.fn().mockRejectedValue(new Error("Persistence failed"));
