@@ -412,6 +412,10 @@ h2 {
   margin-right: 8px;
   padding: 4px 7px;
 }
+.account-remove-button {
+  flex-shrink: 0;
+  margin-right: 8px;
+}
 .language-divider {
   align-self: center;
   color: var(--muted);

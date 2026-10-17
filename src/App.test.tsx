@@ -109,6 +109,21 @@ it("renders network above the selected wallet without tabs or external controls"
     screen.queryByRole("button", { name: /Quit|Hide panel|回退/ }),
   ).toBeNull();
 });
+it.each(["bem", "fab"] as const)(
+  "does not render or request power history in the %s overview",
+  async (project) => {
+    setup();
+    (mock.dashboard as Dashboard).settings.project = project;
+    const { container } = render(<App />);
+    await screen.findByRole("heading", { name: "我的矿机" });
+    expect(screen.queryByRole("heading", { name: "算力历史" })).toBeNull();
+    expect(screen.queryByRole("slider")).toBeNull();
+    expect(container.querySelector(".power-history")).toBeNull();
+    expect(
+      mock.command.mock.calls.some(([name]) => name === "get_history"),
+    ).toBe(false);
+  },
+);
 it("opens ordered auto-saving preferences and retains values after failure", async () => {
   setup();
   const { container } = render(<App />);
@@ -164,7 +179,6 @@ it("adds and selects an account inline, cancels without writing, and confirms re
   fireEvent.click(screen.getByRole("button", { name: "添加账户" }));
   fireEvent.click(screen.getByRole("button", { name: "取消" }));
   expect(screen.queryByRole("textbox", { name: "钱包地址" })).toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: "编辑账户 Gamma" }));
   fireEvent.click(screen.getByRole("button", { name: "移除 Gamma" }));
   expect((mock.dashboard as Dashboard).settings.accounts).toHaveLength(3);
   fireEvent.click(screen.getByRole("button", { name: "确认移除" }));
@@ -220,7 +234,6 @@ it("clears the legacy alias when the last account is removed", async () => {
   render(<App />);
   await screen.findByText("111");
   fireEvent.click(screen.getByRole("button", { name: "设置" }));
-  fireEvent.click(screen.getByRole("button", { name: "编辑账户 Alpha" }));
   fireEvent.click(screen.getByRole("button", { name: "移除 Alpha" }));
   fireEvent.click(screen.getByRole("button", { name: "确认移除" }));
   await waitFor(() => expect(data.settings.wallet).toBe(""));

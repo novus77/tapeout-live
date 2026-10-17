@@ -4,7 +4,6 @@ import { locale, translator } from "./i18n";
 import { useMonitor } from "./useMonitor";
 import { NetworkSection, WalletSection } from "./MonitorSections";
 import { SettingsPanel } from "./SettingsPanel";
-import { PowerHistory } from "./PowerHistory";
 import { useAppearance } from "./appearance";
 import { BrandMark, Icon } from "./Icons";
 export default function App() {
@@ -167,7 +166,6 @@ export default function App() {
               disabled={switching}
               openSettings={() => setSettingsOpen(true)}
             />
-            <PowerHistory data={data} suspended={switching} />
             {Object.entries(data.jobs)
               .filter(([, j]) => j.error)
               .map(([resource, job]) => (

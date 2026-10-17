@@ -131,6 +131,19 @@ export function AccountManager({
               >
                 {t("edit")}
               </button>
+              <button
+                type="button"
+                className="icon-button account-remove-button"
+                disabled={disabled}
+                aria-label={`${t("remove")} ${account.name || `${t("account")} ${i + 1}`}`}
+                title={`${t("remove")} ${account.name || `${t("account")} ${i + 1}`}`}
+                onClick={() => {
+                  setRemoving(account.address);
+                  setError("");
+                }}
+              >
+                <Icon name="trash" />
+              </button>
             </div>
             {editing === account.address && (
               <div className="account-edit">
@@ -183,14 +196,6 @@ export function AccountManager({
                       {t("cancel")}
                     </button>
                     <button disabled={disabled}>{t("saveAccount")}</button>
-                    <button
-                      type="button"
-                      disabled={disabled}
-                      aria-label={`${t("remove")} ${account.name || account.address}`}
-                      onClick={() => setRemoving(account.address)}
-                    >
-                      {t("remove")}
-                    </button>
                   </div>
                 </form>
               </div>
