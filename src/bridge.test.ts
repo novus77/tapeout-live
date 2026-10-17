@@ -10,6 +10,7 @@ it("keeps browser preview settings only in memory with empty real-data surfaces"
     theme: "dark" as const,
     language: "en" as const,
     wallet: first,
+    alias: "Preview",
     accounts: [
       { address: first, name: "Preview" },
       { address: second, name: "Second" },

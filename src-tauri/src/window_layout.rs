@@ -6,7 +6,7 @@ pub struct Rect {
     pub height: f64,
 }
 pub const PANEL_WIDTH: f64 = 420.0;
-pub const PANEL_HEIGHT: f64 = 720.0;
+pub const PANEL_HEIGHT: f64 = 520.0;
 impl Rect {
     pub fn contains(&self, p: (f64, f64)) -> bool {
         p.0 >= self.x && p.0 < self.x + self.width && p.1 >= self.y && p.1 < self.y + self.height

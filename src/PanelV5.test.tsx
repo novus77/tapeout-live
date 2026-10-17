@@ -138,7 +138,93 @@ it("uses sibling edit actions and an explicit cancellable readonly-address edito
   expect(screen.getByRole("button", { name: "中文" })).toBeTruthy();
   expect(screen.getByText("|")).toBeTruthy();
 });
-it("does not relabel legacy FAB holdings and keeps source rows removed", () => {
+it.each(["zh", "en"] as const)(
+  "places an accessible trash action after Edit and confirms deletion in %s",
+  async (language) => {
+    const data = fixture();
+    data.settings.language = language;
+    const save = vi.fn().mockResolvedValue(data.settings);
+    render(
+      <SettingsPanel
+        settings={data.settings}
+        save={save}
+        select={vi.fn()}
+        disabled={false}
+        effectiveTheme="light"
+      />,
+    );
+    const edit = screen.getByRole("button", {
+      name: `${language === "zh" ? "编辑账户" : "Edit account"} Alpha`,
+    });
+    const remove = screen.getByRole("button", {
+      name: `${language === "zh" ? "移除" : "Remove"} Alpha`,
+    });
+    expect(edit.nextElementSibling).toBe(remove);
+    expect(remove.querySelector("svg[aria-hidden=true]")).toBeTruthy();
+    expect(remove.textContent).toBe("");
+    fireEvent.click(remove);
+    expect(screen.getByRole("alertdialog")).toBeTruthy();
+    expect(save).not.toHaveBeenCalled();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: language === "zh" ? "取消" : "Cancel",
+      }),
+    );
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(save).not.toHaveBeenCalled();
+    fireEvent.click(edit);
+    const form = screen
+      .getByRole("textbox", {
+        name: language === "zh" ? "账户名称" : "Account name",
+      })
+      .closest("form")!;
+    expect(
+      within(form).queryByRole("button", {
+        name: new RegExp(language === "zh" ? "移除" : "Remove"),
+      }),
+    ).toBeNull();
+    fireEvent.click(remove);
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: language === "zh" ? "确认移除" : "Confirm removal",
+      }),
+    );
+    await act(async () => {});
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(save.mock.calls[0][0]).toMatchObject({
+      wallet: second,
+      alias: "Beta",
+      accounts: [{ address: second, name: "Beta" }],
+    });
+  },
+);
+
+it("keeps the account and confirmation available when direct removal fails", async () => {
+  const data = fixture();
+  const save = vi.fn().mockRejectedValue(new Error("Removal failed"));
+  const props = {
+    settings: data.settings,
+    save,
+    select: vi.fn(),
+    disabled: true,
+    effectiveTheme: "light" as const,
+  };
+  const { rerender } = render(<SettingsPanel {...props} />);
+  expect(
+    (screen.getByRole("button", { name: "Remove Beta" }) as HTMLButtonElement)
+      .disabled,
+  ).toBe(true);
+  rerender(<SettingsPanel {...props} disabled={false} />);
+  fireEvent.click(screen.getByRole("button", { name: "Remove Beta" }));
+  fireEvent.click(screen.getByRole("button", { name: "Confirm removal" }));
+  await screen.findByText("Removal failed");
+  expect(screen.getByRole("alertdialog")).toBeTruthy();
+  expect(screen.getByText("Beta")).toBeTruthy();
+  expect(data.settings.accounts).toHaveLength(2);
+  expect(data.settings.wallet).toBe(first);
+});
+
+it("shows FAB token holdings without relabeling BEM or BNB and keeps source rows removed", () => {
   const data = fixture("fab");
   const { container } = render(
     <>
@@ -147,11 +233,12 @@ it("does not relabel legacy FAB holdings and keeps source rows removed", () => {
     </>,
   );
   const cells = container.querySelector(".balance-row")!;
-  expect(within(cells as HTMLElement).getByText("BEM balance")).toBeTruthy();
+  expect(within(cells as HTMLElement).getByText("FAB balance")).toBeTruthy();
   expect(within(cells as HTMLElement).getByText("OKB balance")).toBeTruthy();
-  expect(cells.textContent).not.toMatch(/12345|34567|45678/);
+  expect(within(cells as HTMLElement).getByText("12,345")).toBeTruthy();
+  expect(cells.textContent).not.toMatch(/34567|45678/);
   expect(screen.getAllByTitle("TapeOutScan balance unavailable")).toHaveLength(
-    2,
+    1,
   );
   expect(container.querySelector(".source-note")).toBeNull();
   expect(screen.queryByText("Asset snapshot")).toBeNull();

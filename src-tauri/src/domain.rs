@@ -20,6 +20,16 @@ pub struct Snapshot {
 pub struct Account {
     pub address: String,
     pub name: String,
+    #[serde(default = "default_account_projects")]
+    pub projects: Vec<String>,
+}
+fn default_account_projects() -> Vec<String> {
+    vec!["bem".into(), "fab".into()]
+}
+impl Account {
+    pub fn supports(&self, project: &str) -> bool {
+        self.projects.iter().any(|value| value == project)
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -57,6 +67,14 @@ impl Default for Settings {
     }
 }
 impl Settings {
+    pub fn wallet_supports(&self, project: &str) -> bool {
+        !self.wallet.is_empty()
+            && self
+                .accounts
+                .iter()
+                .find(|account| account.address == self.wallet)
+                .is_none_or(|account| account.supports(project))
+    }
     pub fn resource_key(&self, resource: &str) -> String {
         if self.project == "fab" {
             format!("fab_{resource}")
@@ -72,12 +90,24 @@ pub fn canonical_settings(mut settings: Settings) -> Result<Settings, String> {
         settings.accounts.push(Account {
             address: settings.wallet.clone(),
             name: settings.alias.clone(),
+            projects: default_account_projects(),
         });
     }
     let mut seen = std::collections::HashSet::new();
     for account in &mut settings.accounts {
         account.address = account.address.trim().to_lowercase();
         account.name = account.name.trim().into();
+        if account.projects.is_empty()
+            || account.projects.len() > 2
+            || account
+                .projects
+                .iter()
+                .any(|project| !["bem", "fab"].contains(&project.as_str()))
+            || (account.projects.len() == 2 && account.projects[0] == account.projects[1])
+        {
+            return Err("Select at least one valid mining project per account.".into());
+        }
+        account.projects.sort();
         if !valid_wallet(&account.address)
             || account.name.chars().count() > 40
             || !seen.insert(account.address.clone())
@@ -88,19 +118,29 @@ pub fn canonical_settings(mut settings: Settings) -> Result<Settings, String> {
     if settings.accounts.len() > 20 || !["zh", "en"].contains(&settings.language.as_str()) {
         return Err("Invalid account count or language.".into());
     }
-    if settings.wallet.is_empty() {
-        if let Some(first) = settings.accounts.first() {
-            settings.wallet = first.address.clone();
-        }
-    }
-    if !settings.wallet.is_empty() {
-        settings.alias = settings
+    if !settings.wallet.is_empty()
+        && !settings
             .accounts
             .iter()
-            .find(|a| a.address == settings.wallet)
-            .ok_or("Selected wallet is not saved.")?
-            .name
-            .clone();
+            .any(|a| a.address == settings.wallet)
+    {
+        return Err("Selected wallet is not saved.".into());
+    }
+    let selected = settings
+        .accounts
+        .iter()
+        .find(|a| a.address == settings.wallet && a.supports(&settings.project))
+        .or_else(|| {
+            settings
+                .accounts
+                .iter()
+                .find(|a| a.supports(&settings.project))
+        });
+    settings.wallet = selected.map(|a| a.address.clone()).unwrap_or_default();
+    if let Some(account) = selected {
+        settings.alias = account.name.clone();
+    } else if !settings.accounts.is_empty() {
+        settings.alias.clear();
     }
     validate_settings(&settings)?;
     Ok(settings)

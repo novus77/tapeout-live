@@ -3,6 +3,7 @@ import {
   command,
   defaults,
   onSnapshot,
+  settingsForProject,
   type Dashboard,
   type Settings,
   type Project,
@@ -158,7 +159,7 @@ export function useMonitor() {
     expectedProject.current = project;
     setData((previous) => ({
       ...previous,
-      settings: { ...previous.settings, project },
+      settings: settingsForProject(previous.settings, project),
       address: null,
       market: null,
       network: null,
