@@ -323,7 +323,7 @@ h2 {
 .wallet-section,
 .power-history {
   border-top: 1px solid var(--line);
-  margin-top: 10px;
+  margin-top: 6px;
   padding-top: 8px;
 }
 .account-selector {
