@@ -44,7 +44,7 @@ fn mac_panel_keeps_point_dimensions_and_stays_on_negative_origin_screen() {
         height: 1056.0,
     };
     let frame = panel_frame(area, (-300.0, 1070.0), true);
-    assert_eq!((frame.width, frame.height), (420.0, 720.0));
+    assert_eq!((frame.width, frame.height), (420.0, 520.0));
     assert!(frame.x >= -1920.0 && frame.x + frame.width <= 0.0);
     assert!(frame.y >= 0.0 && frame.y + frame.height <= 1056.0);
 }
@@ -60,7 +60,7 @@ fn small_screen_never_shrinks_the_panel() {
         (100.0, 660.0),
         true,
     );
-    assert_eq!((frame.width, frame.height), (420.0, 720.0));
+    assert_eq!((frame.width, frame.height), (420.0, 520.0));
 }
 #[test]
 fn windows_dpi_changes_preserve_perceived_size() {
@@ -76,6 +76,6 @@ fn windows_dpi_changes_preserve_perceived_size() {
             scale,
         );
         assert_eq!(frame.width / scale, 420.0);
-        assert_eq!(frame.height / scale, 720.0);
+        assert_eq!(frame.height / scale, 520.0);
     }
 }
