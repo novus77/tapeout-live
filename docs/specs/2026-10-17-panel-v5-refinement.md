@@ -1,6 +1,6 @@
 # TapeOut Live: Account Controls, History Values, and Global Refresh — SPAC v5
 
-Status: Proposed; awaiting the user's written-spec approval before implementation.
+Status: Approved by the user on 2026-10-17. Implementation is authorized on PR #4; merge and local installation remain separate checkpoints.
 
 Base: `main` at `e69d3326fdeedce0c1015a0a8b48c1ec8e0bccad` (v0.4.0). This specification supersedes the affected account, balance, chart, language-label, and manual-refresh requirements in SPAC v4. All other v4 contracts remain in force.
 
