@@ -202,4 +202,7 @@ function Fixture() {
     </>
   );
 }
-createRoot(document.getElementById("root")!).render(<Fixture />);
+const fixtureRoot = createRoot(document.getElementById("root")!);
+fixtureRoot.render(<Fixture />);
+// Unlike the app entry, this standalone fixture can be re-evaluated by Vite.
+if (import.meta.hot) import.meta.hot.dispose(() => fixtureRoot.unmount());

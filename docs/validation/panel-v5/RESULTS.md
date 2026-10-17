@@ -51,7 +51,7 @@ At implementation commit `0839b92`, the primary worker ran:
 | `cargo fmt --check` | Passed |
 | `cargo clippy --all-targets -- -D warnings` | Passed |
 
-Frontend specification and quality reviews passed after closing duplicate-timestamp inspection and decimal-axis findings. Their regression tests were observed failing before the fixes. The primary worker also checked the final IPC, request-context, cache, alert, and React event/revision integration. A separate final integration-review agent did not complete; do not describe that extra pass as an approval.
+Frontend specification and quality reviews passed after closing duplicate-timestamp inspection and decimal-axis findings. Their regression tests were observed failing before the fixes. Both the primary worker and a separate final integration reviewer checked the final IPC, request-context, cache, alert, and React event/revision integration. The independent final review at `3fe4f9b` found no concrete blocking issues.
 
 ## Browser interaction and geometry checks
 
@@ -64,6 +64,7 @@ Frontend specification and quality reviews passed after closing duplicate-timest
 - Verified latest values, min/mid/max labels, pointer inspection of a real point, keyboard Home/arrow selection, a flat line with one actual-value tick, and stable space for inspection details.
 - Verified FAB displays BEM/OKB unavailable cells, no removed source rows, and independent price/network/wallet age details. Legacy synthetic FAB/BEM/BNB asset values were not relabeled into these cells.
 - Verified the real application entry point's browser adapter: refresh reports both projects' resources as deferred, skips address work with no account, retains outcomes through project selection, and does not manufacture live data. Native HTTP dispatch itself was not run against a user's account.
+- The isolated fixture disposes its React root during Vite hot updates, preventing duplicate-root warnings while editing the fixture. This does not change the production entry point.
 
 Representative screenshots below are synthetic component fixtures, not live account data and not evidence of native blur or hardware behavior:
 
@@ -72,5 +73,7 @@ Representative screenshots below are synthetic component fixtures, not live acco
 - [Warm-white Chinese settings](settings-warm-zh.png)
 
 ## Release boundary
+
+The complete implementation (`0839b92`) passed both macOS DMG and Windows NSIS checks/builds in [run 39020950287](https://github.com/novus77/tapeout-live/actions/runs/39020950287). Later commits contain validation documentation/fixtures only; their workflow status is tracked in PR #4.
 
 No merge, GitHub release, application replacement, user-database change, or startup-setting change is authorized by this development checkpoint. Native multi-monitor, Windows hardware, and installed-app behavior are not verified by browser or fixture tests.

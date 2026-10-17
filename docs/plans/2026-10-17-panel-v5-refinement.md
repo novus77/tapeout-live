@@ -67,4 +67,4 @@ expect(mock.command).toHaveBeenCalledWith("refresh_all");
 - [x] Run the full frontend commands above and `cargo fmt --check`, `cargo test`, `cargo clippy --all-targets -- -D warnings`.
 - [x] Inspect the real preview with synthetic data at 420 × 720; exercise both projects/themes/languages, long accounts, account editor, empty/flat/varying history, focus, and refresh errors. Save only synthetic screenshots if committed.
 - [x] Add `docs/validation/panel-v5/RESULTS.md` with actual commands/results, official balance-data limitation, native/Windows coverage gaps, and no-install statement.
-- [ ] Push implementation commits to PR #4, inspect macOS/Windows CI, fix in-scope failures, and mark ready only after review/verification. Do not merge, publish, or replace the installed app.
+- [x] Push implementation commits to PR #4 and inspect macOS/Windows CI; both passed for `0839b92`. Reviews and local verification passed. Track later documentation-only CI and ready-for-review delivery in PR #4; do not merge, publish, or replace the installed app.
