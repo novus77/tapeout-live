@@ -1,0 +1,245 @@
+<!doctype html>
+<!--
+Visual review only. No production source, native preferences, or SPAC is changed.
+The user's sketch defines the hierarchy and the supplied PNG is the actual mark.
+The canvas shows overview, settings, and account creation together for review.
+Displayed figures are non-live layout references, never claims about user assets.
+Charts intentionally show an empty-history state rather than invented observations.
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TapeOut Live · Frosted Glass Study</title>
+<style>
+:root { --canvas:#eaece9; --canvas-ink:#20262c; --canvas-muted:#6c7479; --navy:#15274c; --panel:#181b20; --surface:#22272e; --raised:#282f37; --line:#343a43; --ink:#f2f4f7; --muted:#a9b1bd; --accent:#4bc4a6; --tint:#223a33; --shadow:0 16px 38px #10201617; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--canvas); color:var(--canvas-ink); font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+button,input,select { font:inherit; }
+button { cursor:pointer; }
+button:focus-visible,input:focus-visible,select:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+button { color:inherit; }
+.review-header { max-width:1260px; margin:auto; padding:28px 28px 20px; display:flex; align-items:center; justify-content:space-between; gap:24px; }
+.eyebrow { font:10px/1.4 Menlo,Consolas,monospace; letter-spacing:1.8px; color:var(--canvas-muted); margin-bottom:6px; }
+.review-header h1 { font-size:23px; font-weight:600; letter-spacing:-.7px; margin:0; }
+.review-header p { color:var(--canvas-muted); font-size:12px; margin:7px 0 0; }
+.review-controls { display:flex; gap:6px; flex-wrap:wrap; }
+.review-controls button { border:1px solid #cbd0ca; background:transparent; padding:7px 12px; border-radius:5px; color:var(--canvas-muted); font-size:12px; }
+.review-controls button[aria-pressed="true"] { color:var(--canvas-ink); background:#fff; border-color:#b7beb7; }
+.canvas { display:grid; grid-template-columns:420px 420px 300px; gap:26px; max-width:1250px; margin:auto; padding:0 24px 26px; align-items:start; }
+.column-label { display:flex; align-items:center; gap:9px; margin:0 0 13px; font-size:12px; font-weight:500; color:var(--canvas-muted); }
+.column-label b { font:10px Menlo,monospace; color:var(--canvas-ink); border:1px solid #bdc5bd; border-radius:3px; width:22px; height:22px; display:grid; place-items:center; }
+.panel { width:420px; height:720px; background:var(--panel); color:var(--ink); border:1px solid #323a42; border-radius:13px; box-shadow:var(--shadow); overflow:hidden; display:flex; flex-direction:column; }
+.app-header { height:58px; flex-shrink:0; border-bottom:1px solid var(--line); padding:10px 16px; display:flex; align-items:center; gap:10px; }
+.wordmark { display:flex; align-items:center; gap:8px; white-space:nowrap; }
+.mark-tile { width:28px; height:28px; background:#fff; border-radius:6px; padding:1px; display:grid; place-items:center; }
+.mark-tile img { width:100%; height:100%; }
+.wordmark strong { font-size:15px; font-weight:650; letter-spacing:-.45px; }
+.wordmark em { font-style:normal; color:var(--accent); font-weight:500; }
+.header-spacer { flex:1; }
+.segmented { display:flex; border:1px solid var(--line); padding:2px; border-radius:6px; background:var(--surface); }
+.segmented button { color:var(--muted); background:transparent; border:0; border-radius:4px; padding:4px 8px; min-height:26px; font-size:11px; font-weight:600; }
+.segmented button[aria-pressed="true"] { background:var(--tint); color:var(--accent); }
+.icon-button { display:grid; place-items:center; border:0; background:transparent; color:var(--muted); width:28px; height:32px; padding:0; border-radius:5px; flex-shrink:0; }
+.icon-button:hover,.icon-button[aria-pressed="true"] { background:var(--surface); color:var(--ink); }
+.icon-button svg { width:17px; height:17px; }
+.panel-content { padding:16px 18px; overflow-y:auto; overflow-x:hidden; flex:1; scrollbar-width:thin; scrollbar-color:var(--line) transparent; }
+.section-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:11px; }
+.section-heading h2 { font-size:13px; font-weight:600; margin:0; letter-spacing:.2px; }
+.source-status { color:var(--muted); font-size:10px; display:flex; align-items:center; gap:5px; white-space:nowrap; }
+.source-status i { width:5px; height:5px; border-radius:50%; background:var(--accent); }
+.metric-group { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); background:var(--surface); border:1px solid var(--line); border-radius:9px; overflow:hidden; }
+.metric { padding:10px 14px 9px; min-width:0; min-height:70px; }
+.metric:nth-child(odd) { border-right:1px solid var(--line); }
+.metric:nth-child(-n+2) { border-bottom:1px solid var(--line); }
+.metric label { display:block; font-size:11px; color:var(--muted); margin-bottom:5px; }
+.metric-value { display:flex; align-items:baseline; gap:5px; min-width:0; font-size:26px; line-height:1.15; font-weight:600; letter-spacing:-.9px; font-variant-numeric:tabular-nums; }
+.metric-value.small { font-size:23px; }
+.metric-value span { font-size:10px; color:var(--muted); letter-spacing:0; font-weight:400; }
+.network-foot { display:flex; justify-content:space-between; color:var(--muted); font-size:10px; margin-top:9px; }
+.network-foot strong { font-weight:500; color:var(--ink); }
+.divider { height:1px; background:var(--line); margin:16px 0 13px; }
+.account-select { color:var(--ink); background:var(--surface); border:1px solid var(--line); border-radius:5px; padding:4px 7px; max-width:188px; font-size:10px; min-height:26px; }
+.address-row { display:flex; align-items:center; gap:7px; margin:-2px 0 12px; color:var(--muted); font-size:10px; }
+.address-row code { font:10px Menlo,Consolas,monospace; }
+.address-row .icon-button { width:19px; height:19px; }
+.address-row .icon-button svg { width:13px; height:13px; }
+.address-row .source-status { margin-left:auto; }
+.mining-group .metric { min-height:74px; }
+.mining-group .metric-value { font-size:31px; }
+.mining-group .metric-value.small { font-size:23px; }
+.mining-group .metric:nth-child(-n+2) .metric-value { color:var(--accent); }
+.balance-strip { display:grid; grid-template-columns:1fr 1fr; gap:18px; padding:12px 1px 1px; }
+.balance-strip .balance { display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-size:11px; color:var(--muted); }
+.balance-strip b { color:var(--ink); font:12px Menlo,Consolas,monospace; }
+.balance-strip .balance:only-child { grid-column:1/-1; }
+.trend-heading { display:flex; justify-content:space-between; align-items:center; font-size:12px; margin-bottom:8px; }
+.trend-heading span { font-size:10px; color:var(--muted); }
+.chart { height:72px; position:relative; background:linear-gradient(to bottom,transparent 32%,var(--line) 32%,var(--line) 33%,transparent 33%,transparent 66%,var(--line) 66%,var(--line) 67%,transparent 67%); border-bottom:1px solid var(--line); }
+.chart-empty { position:absolute; inset:0; display:flex; justify-content:center; align-items:center; gap:6px; color:var(--muted); font-size:11px; }
+.chart-times { display:flex; justify-content:space-between; color:var(--muted); font:9px Menlo,monospace; margin-top:7px; }
+.settings-title { font-size:18px; margin:0 0 3px; letter-spacing:-.3px; font-weight:600; }
+.subtitle { font-size:11px; color:var(--muted); margin:0 0 20px; }
+.settings-group-title { display:flex; justify-content:space-between; align-items:center; margin-bottom:9px; }
+.settings-group-title h3 { margin:0; font-size:12px; font-weight:600; }
+.add-button { display:flex; align-items:center; gap:5px; color:var(--accent); font-size:11px; border:0; background:none; padding:4px 0 4px 8px; }
+.add-button svg { width:13px; height:13px; }
+.saved-accounts { border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+.saved-account { display:flex; width:100%; align-items:center; gap:10px; padding:13px 12px; color:var(--ink); background:var(--surface); border:0; text-align:left; }
+.saved-account + .saved-account { border-top:1px solid var(--line); }
+.account-avatar { width:30px; height:30px; display:grid; place-items:center; background:var(--raised); border-radius:7px; font:11px Menlo,monospace; color:var(--muted); flex-shrink:0; }
+.saved-account[aria-pressed="true"] .account-avatar { background:var(--tint); color:var(--accent); }
+.saved-account strong { display:block; font-size:12px; font-weight:500; margin-bottom:3px; }
+.saved-account code { color:var(--muted); font:10px Menlo,monospace; }
+.saved-account .selected-label { margin-left:auto; font-size:10px; color:var(--accent); }
+.settings-note { font-size:10px; color:var(--muted); margin:9px 0 20px; }
+.preference-row { display:flex; align-items:center; justify-content:space-between; min-height:64px; gap:16px; border-bottom:1px solid var(--line); }
+.preference-row strong { font-size:12px; font-weight:500; display:block; }
+.preference-row p { margin:3px 0 0; color:var(--muted); font-size:10px; }
+.preference-row .segmented button { padding:4px 12px; }
+.switch { position:relative; width:32px; height:19px; background:var(--line); border-radius:12px; border:0; padding:0; }
+.switch::before { content:""; position:absolute; width:13px; height:13px; background:#fff; top:3px; left:3px; border-radius:50%; transition:transform .15s; }
+.switch[aria-checked="true"] { background:var(--accent); }
+.switch[aria-checked="true"]::before { transform:translateX(13px); }
+.settings-footnote { color:var(--muted); font-size:10px; margin-top:20px; line-height:1.8; }
+.minor-note { color:var(--canvas-muted); font-size:11px; line-height:1.8; margin:14px 2px 0; }
+.review-side { width:300px; }
+.account-form { color:var(--ink); background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:21px; box-shadow:var(--shadow); }
+.account-form h2 { margin:0 0 5px; font-size:16px; font-weight:600; }
+.account-form p { margin:0 0 20px; color:var(--muted); font-size:11px; line-height:1.7; }
+.account-form label { display:block; font-size:11px; margin-bottom:15px; }
+.account-form input { display:block; width:100%; height:37px; border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:5px; margin-top:7px; padding:0 10px; font-size:11px; }
+.form-actions { display:flex; gap:8px; margin-top:20px; }
+.form-actions button { border:1px solid var(--line); background:var(--surface); border-radius:5px; font-size:11px; padding:9px 12px; flex:1; }
+.form-actions .primary { color:#10231c; background:var(--accent); border-color:var(--accent); font-weight:600; }
+.form-feedback { font-size:10px; color:var(--accent); min-height:16px; margin-top:10px; }
+.icon-section { padding:0 2px; margin-top:28px; }
+.icon-section h3 { font-size:12px; font-weight:500; margin:0 0 13px; }
+.icon-examples { display:flex; align-items:center; gap:24px; }
+.app-icon { width:94px; height:94px; background:#fff; border-radius:21px; padding:3px; box-shadow:0 3px 8px #10201612; }
+.app-icon img { width:100%; height:100%; border-radius:18px; }
+.icon-caption { margin-top:9px; color:var(--canvas-muted); font-size:10px; }
+.menu-bars { flex:1; }
+.menu-bar { height:31px; border-radius:5px; display:flex; justify-content:flex-end; align-items:center; gap:12px; padding:0 11px; background:#d9ddd8; margin-bottom:7px; color:#2e3337; font-size:10px; }
+.menu-bar img { width:23px; height:23px; mix-blend-mode:multiply; }
+.menu-bar.dark { background:#282d32; color:#e5e8ed; }
+.menu-bar.dark img { filter:invert(1) grayscale(1); mix-blend-mode:screen; }
+.canvas-note { font-size:11px; color:var(--canvas-muted); max-width:1250px; padding:0 24px 24px; margin:auto; }
+.toast { position:fixed; bottom:22px; left:50%; transform:translateX(-50%); background:var(--canvas-ink); color:var(--canvas); padding:10px 18px; border-radius:7px; font-size:12px; box-shadow:var(--shadow); z-index:5; }
+.toast:empty { display:none; }
+body.light { --panel:#fafbf9; --surface:#fff; --raised:#edf0eb; --line:#e1e5df; --ink:#202a31; --muted:#728078; --accent:#25795f; --tint:#e7f2eb; }
+body.light .panel { border-color:#cbd2c9; }
+body.light .form-actions .primary { color:#fff; }
+body.focus-view .canvas { grid-template-columns:420px; justify-content:center; }
+body.focus-view .settings-column,body.focus-view .review-side { display:none; }
+body.focus-view .main-column .minor-note { max-width:420px; }
+@media(max-width:1200px) { .canvas { grid-template-columns:420px 420px; justify-content:center; } .review-side { grid-column:1/-1; width:auto; display:grid; grid-template-columns:300px 1fr; gap:30px; } .review-side>.column-label { display:none; } .icon-section { margin-top:0; } }
+@media(max-width:900px) { .canvas { grid-template-columns:420px; } .review-header { align-items:flex-start; } .review-side { grid-column:auto; display:block; width:420px; } .account-form { max-width:420px; } .icon-section { margin-top:24px; } }
+body.board-view { min-width:1250px; }
+body.board-view .canvas { grid-template-columns:420px 420px 300px; }
+body.board-view .review-side { grid-column:auto; display:block; width:300px; }
+body.board-view .review-side>.column-label { display:flex; }
+body.board-view .icon-section { margin-top:28px; }
+@media(prefers-reduced-motion:reduce) { * { transition:none!important; } }
+/* Official TapeOut palette, inspected 2026-10-17. Glass is a proposed adaptation. */
+:root { --canvas:#e9e8e0; --canvas-ink:#1d1d1b; --canvas-muted:#6b6a66; --panel:rgba(24,32,29,.84); --surface:rgba(246,245,241,.055); --raised:rgba(246,245,241,.08); --line:rgba(227,225,218,.14); --ink:#f6f5f1; --muted:#b5b9b0; --accent:#8ccbb6; --tint:rgba(15,107,92,.24); --shadow:0 22px 54px rgba(35,48,38,.12),0 3px 9px rgba(35,48,38,.06); }
+body { isolation:isolate; background:var(--canvas); }
+body::before { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; background:radial-gradient(ellipse at 12% 45%,rgba(15,107,92,.19),transparent 48%),radial-gradient(ellipse at 89% 50%,rgba(236,217,163,.4),transparent 49%),linear-gradient(125deg,#f6f5f1 2%,#e4e8df 52%,#efe9d9 100%); }
+body.light { --panel:rgba(246,245,241,.74); --surface:rgba(255,255,255,.52); --raised:rgba(239,237,230,.68); --line:rgba(117,120,105,.18); --ink:#1d1d1b; --muted:#6b6a66; --accent:#0f6b5c; --tint:rgba(230,240,237,.86); }
+.panel,.account-form { position:relative; background:var(--panel); -webkit-backdrop-filter:blur(28px) saturate(135%); backdrop-filter:blur(28px) saturate(135%); border:1px solid rgba(255,255,255,.22); border-radius:18px; box-shadow:inset 0 1px 0 rgba(255,255,255,.18),var(--shadow); }
+body.light .panel,body.light .account-form { border-color:rgba(255,255,255,.82); box-shadow:inset 0 1px 0 rgba(255,255,255,.94),var(--shadow); }
+.app-header { background:rgba(246,245,241,.025); border-bottom-color:var(--line); }
+body.light .app-header { background:rgba(255,255,255,.28); }
+.mark-tile { background:rgba(255,255,255,.84); box-shadow:0 1px 3px rgba(35,48,38,.08); }
+.metric-group { background:var(--surface); border-color:var(--line); border-radius:10px; box-shadow:inset 0 1px 0 rgba(255,255,255,.06); }
+body.light .metric-group { border-color:rgba(255,255,255,.8); box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 1px 3px rgba(35,48,38,.025); }
+.metric:nth-child(odd),.metric:nth-child(-n+2) { border-color:var(--line); }
+.segmented { box-shadow:inset 0 1px 2px rgba(0,0,0,.035); background:rgba(246,245,241,.04); }
+body.light .segmented { background:rgba(239,237,230,.58); }
+.segmented button[aria-pressed="true"] { box-shadow:0 1px 3px rgba(0,0,0,.045); }
+body.light .segmented button[aria-pressed="true"] { background:rgba(255,255,255,.92); }
+.icon-button svg { width:18px; height:18px; }
+.icon-button[aria-pressed="true"] { color:var(--accent); background:var(--tint); }
+.saved-accounts { border-radius:10px; border-color:var(--line); }
+.saved-account[aria-pressed="true"] { background:var(--tint); }
+.account-form input { background:var(--surface); border-radius:7px; box-shadow:inset 0 1px 2px rgba(0,0,0,.02); }
+.form-actions button { border-radius:7px; }
+.form-actions .primary { color:#fff; background:#0f6b5c; border-color:#0f6b5c; }
+.review-controls button { background:rgba(255,255,255,.28); border-color:rgba(110,116,101,.18); }
+.review-controls button[aria-pressed="true"] { background:rgba(255,255,255,.82); box-shadow:0 1px 3px rgba(35,48,38,.06); }
+.column-label b { background:rgba(255,255,255,.3); }
+.app-icon { box-shadow:inset 0 1px 0 #fff,0 10px 20px rgba(35,48,38,.09); border:1px solid rgba(255,255,255,.8); }
+.reference-palette { display:flex; gap:10px; margin-top:17px; align-items:center; color:var(--canvas-muted); font:9px Menlo,monospace; }
+.reference-palette i { display:inline-block; width:10px; height:10px; border:1px solid rgba(0,0,0,.1); border-radius:50%; vertical-align:-1px; margin-right:4px; }
+.glass-caption { display:inline-block; font-size:10px; color:var(--canvas-muted); border:1px solid rgba(110,116,101,.18); background:rgba(255,255,255,.25); padding:5px 8px; border-radius:5px; margin-top:13px; }
+.preference-row { min-height:50px; }
+.subtitle { margin-bottom:14px; }
+.settings-note { margin-bottom:12px; }
+.settings-footnote { margin-top:12px; }
+.theme-choice button { padding:4px 8px!important; }
+.theme-choice button:disabled { cursor:default; opacity:.45; }
+@supports not (backdrop-filter:blur(1px)) { .panel,.account-form { background:#202a25; } body.light .panel,body.light .account-form { background:#f6f5f1; } }
+</style>
+</head>
+<body class="light">
+<header class="review-header">
+  <div><div class="eyebrow">TAPEOUT LIVE / FROSTED STUDY 02</div><h1>官网配色，轻盈的磨砂质感。</h1><p>保持你的布局 · 固定 420 × 720 · 暖白 / 墨色 / 深绿 · 非实时排版参考</p></div>
+  <div class="review-controls"><button data-theme="light" aria-pressed="true">暖白磨砂</button><button data-theme="dark" aria-pressed="false">烟色磨砂</button><button id="focus-toggle" aria-pressed="false">单窗交互</button></div>
+</header>
+<main class="canvas">
+  <section class="main-column"><div class="column-label"><b>01</b>主面板</div><div class="panel" id="main-panel"></div><p class="minor-note">BEM/FAB 收回顶部。主页不放账户管理、语言及偏好设置。<br>设置按钮可在同一固定窗口内切换，不新增退出或关闭控件。</p></section>
+  <section class="settings-column"><div class="column-label"><b>02</b>设置</div><div class="panel" id="settings-panel"></div><p class="minor-note">账户列表集中管理；「＋ 添加账户」进入右侧表单。<br>示例交互只保存在原型内，不修改你已安装的应用。</p></section>
+  <aside class="review-side"><div class="column-label"><b>03</b>添加账户</div>
+    <form class="account-form" id="account-form"><h2 data-text="addTitle">添加账户</h2><p data-text="addHelp">为公开钱包设置一个易识别的名称。无需连接钱包，不涉及签名。</p>
+      <label><span data-text="name">账户名称</span><input id="new-name" placeholder="例如：工作室" maxlength="40" required></label>
+      <label><span data-text="wallet">钱包地址</span><input id="new-wallet" placeholder="0x…" spellcheck="false" autocomplete="off" pattern="0x[0-9a-fA-F]{40}" required></label>
+      <div class="form-actions"><button type="button" id="cancel-add" data-text="cancel">取消</button><button class="primary" data-text="save">保存账户</button></div><div class="form-feedback" id="form-feedback" aria-live="polite"></div>
+    </form>
+    <section class="icon-section"><h3>品牌双翼 + Phosphor Regular</h3><div class="icon-examples"><div><div class="app-icon"><img src="assets/tapeout-mark-reference.png" alt="TapeOut Live new icon"></div><div class="icon-caption">应用图标</div></div><div class="menu-bars"><div class="menu-bar"><img src="assets/tapeout-mark-reference.png" alt="Light menu bar icon"><span>09:41</span></div><div class="menu-bar dark"><img src="assets/tapeout-mark-reference.png" alt="Dark menu bar icon"><span>09:41</span></div><div class="icon-caption">菜单栏 · 浅色 / 深色适配示意</div></div></div><p class="minor-note">保留双翼品牌标记。设置、刷新、复制与添加使用 Phosphor 的统一 Regular 图标，不混用描边风格。</p><div class="reference-palette"><span><i style="background:#f6f5f1"></i>#F6F5F1</span><span><i style="background:#1d1d1b"></i>#1D1D1B</span><span><i style="background:#0f6b5c"></i>#0F6B5C</span></div><div class="glass-caption">半透明表面 · 背景模糊 · 柔和边缘高光</div></section>
+  </aside>
+</main>
+<p class="canvas-note">原型未连接 API。账户、资产与走势图均不代表你的实际情况；曲线区保留「等待历史样本」，不绘制虚构走势。确认布局后再进入 SPAC 和开发。</p>
+<div id="toast" class="toast" role="status"></div>
+<script>
+// Phosphor Regular paths from phosphoricons.com; see assets/PHOSPHOR-LICENSE.txt.
+const iconPaths={
+gear:'M128,80a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Zm109.94-52.79a8,8,0,0,0-3.89-5.4l-29.83-17-.12-33.62a8,8,0,0,0-2.83-6.08,111.91,111.91,0,0,0-36.72-20.67,8,8,0,0,0-6.46.59L128,41.85,97.88,25a8,8,0,0,0-6.47-.6A112.1,112.1,0,0,0,54.73,45.15a8,8,0,0,0-2.83,6.07l-.15,33.65-29.83,17a8,8,0,0,0-3.89,5.4,106.47,106.47,0,0,0,0,41.56,8,8,0,0,0,3.89,5.4l29.83,17,.12,33.62a8,8,0,0,0,2.83,6.08,111.91,111.91,0,0,0,36.72,20.67,8,8,0,0,0,6.46-.59L128,214.15,158.12,231a7.91,7.91,0,0,0,3.9,1,8.09,8.09,0,0,0,2.57-.42,112.1,112.1,0,0,0,36.68-20.73,8,8,0,0,0,2.83-6.07l.15-33.65,29.83-17a8,8,0,0,0,3.89-5.4A106.47,106.47,0,0,0,237.94,107.21Zm-15,34.91-28.57,16.25a8,8,0,0,0-3,3c-.58,1-1.19,2.06-1.81,3.06a7.94,7.94,0,0,0-1.22,4.21l-.15,32.25a95.89,95.89,0,0,1-25.37,14.3L134,199.13a8,8,0,0,0-3.91-1h-.19c-1.21,0-2.43,0-3.64,0a8.08,8.08,0,0,0-4.1,1l-28.84,16.1A96,96,0,0,1,67.88,201l-.11-32.2a8,8,0,0,0-1.22-4.22c-.62-1-1.23-2-1.8-3.06a8.09,8.09,0,0,0-3-3.06l-28.6-16.29a90.49,90.49,0,0,1,0-28.26L61.67,97.63a8,8,0,0,0,3-3c.58-1,1.19-2.06,1.81-3.06a7.94,7.94,0,0,0,1.22-4.21l.15-32.25a95.89,95.89,0,0,1,25.37-14.3L122,56.87a8,8,0,0,0,4.1,1c1.21,0,2.43,0,3.64,0a8.08,8.08,0,0,0,4.1-1l28.84-16.1A96,96,0,0,1,188.12,55l.11,32.2a8,8,0,0,0,1.22,4.22c.62,1,1.23,2,1.8,3.06a8.09,8.09,0,0,0,3,3.06l28.6,16.29A90.49,90.49,0,0,1,222.9,142.12Z',
+refresh:'M224,48V96a8,8,0,0,1-8,8H168a8,8,0,0,1,0-16h28.69L182.06,73.37a79.56,79.56,0,0,0-56.13-23.43h-.45A79.52,79.52,0,0,0,69.59,72.71,8,8,0,0,1,58.41,61.27a96,96,0,0,1,135,.79L208,76.69V48a8,8,0,0,1,16,0ZM186.41,183.29a80,80,0,0,1-112.47-.66L59.31,168H88a8,8,0,0,0,0-16H40a8,8,0,0,0-8,8v48a8,8,0,0,0,16,0V179.31l14.63,14.63A95.43,95.43,0,0,0,130,222.06h.53a95.36,95.36,0,0,0,67.07-27.33,8,8,0,0,0-11.18-11.44Z',
+copy:'M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32ZM160,208H48V96H160Zm48-48H176V88a8,8,0,0,0-8-8H96V48H208Z',
+plus:'M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z'};
+const icon=(name)=>`<svg viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="${iconPaths[name]}"/></svg>`;
+const copy={zh:{network:'全网概览',reference:'参考数据',price:'价格',networkPower:'全网算力',verified:'已验证权重',emission:'每日发行',unverified:'未验证权重',pool:'TapeOut 矿池',mining:'我的矿机',power:'当前算力',production:'预计日产',miners:'矿机数量',optimal:'最优席位',balance:'余额',trend:'算力趋势',last24:'近 24 小时',empty:'等待历史样本',settings:'设置',preferences:'账户与应用偏好',accounts:'账户列表',add:'添加账户',selected:'当前',accountNote:'公开地址仅保存在本机。切换账户不需要连接钱包。',language:'语言',startup:'开机启动',startupNote:'登录电脑后自动运行',pin:'保持面板置顶',pinNote:'点击其他窗口时仍保持显示',interval:'刷新频率',intervalNote:'地址与行情数据的更新间隔',seconds:'秒',saved:'偏好自动保存',local:'此处仅演示交互，不修改本机设置',name:'账户名称',wallet:'钱包地址',addTitle:'添加账户',addHelp:'为公开钱包设置一个易识别的名称。无需连接钱包，不涉及签名。',cancel:'取消',save:'保存账户',refresh:'刷新数据',copy:'复制地址',home:'返回监控',addSuccess:'账户已加入原型（未保存到应用）',copyNote:'此为原型示例地址',refreshNote:'原型未连接 API',duplicate:'该示例地址已存在',cleared:'表单已清空',dataNote:'仅排版参考'},en:{network:'Network',reference:'Reference data',price:'price',networkPower:'Network power',verified:'Verified weight',emission:'Daily emission',unverified:'Unverified weight',pool:'TapeOut pools',mining:'My mining',power:'Mining power',production:'Estimated / day',miners:'Mining circuits',optimal:'Optimal positions',balance:'balance',trend:'Power history',last24:'Last 24 hours',empty:'Waiting for history samples',settings:'Settings',preferences:'Accounts and application preferences',accounts:'Saved accounts',add:'Add account',selected:'Selected',accountNote:'Public addresses stay on this device. No wallet connection required.',language:'Language',startup:'Launch at login',startupNote:'Start automatically when you sign in',pin:'Keep panel on top',pinNote:'Keep visible when another window receives focus',interval:'Refresh interval',intervalNote:'Address and market update frequency',seconds:'sec',saved:'Preferences save automatically',local:'Prototype only; application preferences are unchanged',name:'Account name',wallet:'Wallet address',addTitle:'Add account',addHelp:'Give a public wallet a recognizable name. No connection or signature required.',cancel:'Cancel',save:'Save account',refresh:'Refresh data',copy:'Copy address',home:'Return to monitoring',addSuccess:'Added to prototype only',copyNote:'This is a prototype sample address',refreshNote:'This prototype is not connected to an API',duplicate:'This sample address is already saved',cleared:'Form cleared',dataNote:'Layout reference only'}};
+Object.assign(copy.zh,{theme:'主题',warm:'暖白',smoke:'烟色',followSystem:'跟随系统主题',followHint:'随系统明暗自动切换',manualHint:'关闭后使用手动选择的主题'});
+Object.assign(copy.en,{theme:'Theme',warm:'Warm white',smoke:'Smoke',followSystem:'Follow system theme',followHint:'Adapt to system light or dark appearance',manualHint:'Turn off to use your manual theme'});
+const state={project:'bem',language:'zh',theme:'light',followSystem:false,startup:false,pinned:true,interval:'60',mainSettings:false,accounts:[{name:'主账户',address:'0x0000000000000000000000000000000000000001'},{name:'备用账户',address:'0x0000000000000000000000000000000000000002'}],selected:0};
+const systemTheme=window.matchMedia('(prefers-color-scheme: dark)');
+const resolvedTheme=()=>state.followSystem?(systemTheme.matches?'dark':'light'):state.theme;
+function applyTheme(){const theme=resolvedTheme();document.body.classList.toggle('light',theme==='light');document.querySelectorAll('.review-controls [data-theme]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.theme===theme)));}
+function addThemePreferences(){document.querySelectorAll('.panel .settings-title').forEach(title=>{const anchor=title.parentElement.querySelector('.preference-row');anchor.insertAdjacentHTML('beforebegin',`<div class="preference-row"><strong>${t('theme')}</strong><div class="segmented theme-choice" role="group" aria-label="${t('theme')}"><button data-theme-choice="light" aria-pressed="${resolvedTheme()==='light'}" ${state.followSystem?'disabled':''}>${t('warm')}</button><button data-theme-choice="dark" aria-pressed="${resolvedTheme()==='dark'}" ${state.followSystem?'disabled':''}>${t('smoke')}</button></div></div><div class="preference-row"><div><strong>${t('followSystem')}</strong><p>${t(state.followSystem?'followHint':'manualHint')}</p></div><button class="switch" role="switch" aria-label="${t('followSystem')}" aria-checked="${state.followSystem}" data-follow-system></button></div>`);});}
+Object.assign(copy.zh,{pin:'保持面板展开'});
+Object.assign(copy.en,{pin:'Keep panel expanded'});
+function orderPreferences(){
+  const controls=['[data-theme-choice]','[data-language]','[data-switch="startup"]','[data-follow-system]','[data-interval]','[data-switch="pinned"]'];
+  document.querySelectorAll('.panel .settings-footnote').forEach(footer=>{
+    controls.forEach(selector=>footer.before(footer.parentElement.querySelector(selector).closest('.preference-row')));
+  });
+}
+systemTheme.addEventListener('change',()=>{if(state.followSystem)render();});
+if(new URLSearchParams(location.search).has('board'))document.body.classList.add('board-view');
+const t=(key)=>copy[state.language][key];
+const escapeText=(value)=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const short=(address)=>address.slice(0,8)+'…'+address.slice(-6);
+function header(isSettings){return `<header class="app-header"><div class="wordmark"><span class="mark-tile"><img src="assets/tapeout-mark-reference.png" alt=""></span><strong>TapeOut <em>Live</em></strong></div><span class="header-spacer"></span><div class="segmented" role="group" aria-label="BEM/FAB">${['bem','fab'].map(p=>`<button data-project="${p}" aria-pressed="${state.project===p}">${p.toUpperCase()}</button>`).join('')}</div><button class="icon-button" data-settings aria-label="${isSettings?t('home'):t('settings')}" title="${isSettings?t('home'):t('settings')}" aria-pressed="${isSettings}">${icon('gear')}</button><button class="icon-button" data-refresh aria-label="${t('refresh')}" title="${t('refresh')}">${icon('refresh')}</button></header>`;}
+function metric(label,value,unit='',small=false){return `<div class="metric"><label>${label}</label><div class="metric-value ${small?'small':''}">${value}${unit?`<span>${unit}</span>`:''}</div></div>`;}
+function overview(){const fab=state.project==='fab',token=fab?'FAB':'BEM',a=state.accounts[state.selected],unknown=state.selected>0;return header(false)+`<div class="panel-content"><section><div class="section-heading"><h2>${t('network')}</h2><span class="source-status"><i></i>${t('reference')}</span></div><div class="metric-group">${metric(token+' '+t('price'),fab?'0.6421':'37.91',fab?'USDT':'USD')}${metric(t('networkPower'),fab?'297,645,312':'1,616,261','H',true)}${metric(t('verified'),fab?'282,882,810':'1,575,497','',true)}${metric(t('emission'),'7,200',token)}</div><div class="network-foot"><span>${t('unverified')} <strong>${fab?'14,762,502':'40,764'}</strong></span><span>${fab?'FabX':t('pool')}</span></div></section><div class="divider"></div><section><div class="section-heading"><h2>${t('mining')}</h2><select class="account-select" data-account aria-label="${t('accounts')}">${state.accounts.map((a,i)=>`<option value="${i}" ${i===state.selected?'selected':''}>${escapeText(a.name)} · ${short(a.address)}</option>`).join('')}</select></div><div class="address-row"><code>${short(a.address)}</code><button class="icon-button" data-copy aria-label="${t('copy')}">${icon('copy')}</button><span class="source-status">${t('dataNote')}</span></div><div class="metric-group mining-group">${metric(t('power'),unknown?'—':fab?'19,323,990':'46','H',fab)}${metric(t('production'),unknown?'—':fab?'486.67':'0.21',token)}${metric(t('miners'),unknown?'—':fab?'129':'3')}${metric(t('optimal'),unknown?'—':'0')}</div><div class="balance-strip"><div class="balance"><span>${token} ${t('balance')}</span><b>${unknown?'—':fab?'0.65262245':'0'}</b></div>${fab?'':`<div class="balance"><span>BNB ${t('balance')}</span><b>${unknown?'—':'0.0546'}</b></div>`}</div></section><div class="divider"></div><section><div class="trend-heading"><strong>${t('trend')}</strong><span>${t('last24')}</span></div><div class="chart"><span class="chart-empty">${t('empty')}</span></div><div class="chart-times"><span>00:00</span><span>12:00</span><span>24:00</span></div></section></div>`;}
+function preferences(){return header(true)+`<div class="panel-content"><h2 class="settings-title">${t('settings')}</h2><p class="subtitle">${t('preferences')}</p><section><div class="settings-group-title"><h3>${t('accounts')}</h3><button class="add-button" data-add>${icon('plus')}${t('add')}</button></div><div class="saved-accounts">${state.accounts.map((a,i)=>`<button class="saved-account" data-select="${i}" aria-pressed="${i===state.selected}"><span class="account-avatar">${String(i+1).padStart(2,'0')}</span><span><strong>${escapeText(a.name)}</strong><code>${short(a.address)}</code></span>${i===state.selected?`<span class="selected-label">${t('selected')}</span>`:''}</button>`).join('')}</div><p class="settings-note">${t('accountNote')}</p></section><div class="preference-row"><strong>${t('language')}</strong><div class="segmented" role="group" aria-label="${t('language')}"><button data-language="zh" aria-pressed="${state.language==='zh'}">CN</button><button data-language="en" aria-pressed="${state.language==='en'}">EN</button></div></div><div class="preference-row"><div><strong>${t('startup')}</strong><p>${t('startupNote')}</p></div><button class="switch" role="switch" aria-label="${t('startup')}" aria-checked="${state.startup}" data-switch="startup"></button></div><div class="preference-row"><div><strong>${t('pin')}</strong><p>${t('pinNote')}</p></div><button class="switch" role="switch" aria-label="${t('pin')}" aria-checked="${state.pinned}" data-switch="pinned"></button></div><div class="preference-row"><div><strong>${t('interval')}</strong><p>${t('intervalNote')}</p></div><select class="account-select" data-interval aria-label="${t('interval')}">${['60','120','300'].map(n=>`<option value="${n}" ${state.interval===n?'selected':''}>${n} ${t('seconds')}</option>`).join('')}</select></div><p class="settings-footnote">${t('saved')}<br>${t('local')}</p></div>`;}
+function render(){document.documentElement.lang=state.language==='zh'?'zh-CN':'en';document.getElementById('main-panel').innerHTML=state.mainSettings?preferences():overview();document.getElementById('settings-panel').innerHTML=preferences();addThemePreferences();orderPreferences();applyTheme();document.querySelectorAll('[data-text]').forEach(el=>el.textContent=t(el.dataset.text));}
+let toastTimer;
+function toast(message){const el=document.getElementById('toast');el.textContent=message;clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.textContent='',2200);}
+document.addEventListener('click',event=>{const b=event.target.closest('button');if(!b||b.disabled)return;if(b.dataset.project){state.project=b.dataset.project;render();}else if(b.dataset.language){state.language=b.dataset.language;render();}else if(b.hasAttribute('data-settings')){state.mainSettings=!state.mainSettings;render();}else if(b.dataset.select!==undefined){state.selected=Number(b.dataset.select);render();}else if(b.hasAttribute('data-follow-system')){state.followSystem=!state.followSystem;render();}else if(b.dataset.themeChoice||b.dataset.theme){state.theme=b.dataset.themeChoice||b.dataset.theme;state.followSystem=false;render();}else if(b.dataset.switch){state[b.dataset.switch]=!state[b.dataset.switch];render();}else if(b.hasAttribute('data-copy')){toast(t('copyNote'));}else if(b.hasAttribute('data-refresh')){toast(t('refreshNote'));}else if(b.hasAttribute('data-add')){document.body.classList.remove('focus-view');document.getElementById('focus-toggle').setAttribute('aria-pressed','false');document.getElementById('new-name').focus();}else if(b.id==='focus-toggle'){document.body.classList.toggle('focus-view');b.setAttribute('aria-pressed',String(document.body.classList.contains('focus-view')));}else if(b.id==='cancel-add'){document.getElementById('account-form').reset();document.getElementById('form-feedback').textContent=t('cleared');}});
+document.addEventListener('change',event=>{if(event.target.hasAttribute('data-account')){state.selected=Number(event.target.value);render();}if(event.target.hasAttribute('data-interval')){state.interval=event.target.value;render();}});
+document.getElementById('account-form').addEventListener('submit',event=>{event.preventDefault();const name=document.getElementById('new-name').value.trim(),address=document.getElementById('new-wallet').value.trim().toLowerCase();if(!name||!/^0x[0-9a-f]{40}$/.test(address))return;if(state.accounts.some(a=>a.address===address)){document.getElementById('form-feedback').textContent=t('duplicate');return;}state.accounts.push({name,address});state.selected=state.accounts.length-1;event.target.reset();render();document.getElementById('form-feedback').textContent=t('addSuccess');});
+render();
+</script>
+</body>
+</html>
