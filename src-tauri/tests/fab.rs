@@ -69,7 +69,7 @@ fn fab_market_and_pool_have_independent_freshness_and_precision_contract() {
 }
 
 #[test]
-fn switching_project_isolates_cached_data_jobs_and_response_generations() {
+fn switching_project_isolates_visible_cache_without_invalidating_valid_responses() {
     let dir = tempfile::tempdir().unwrap();
     let mut engine = Engine::new(Store::open(&dir.path().join("cache.sqlite")).unwrap()).unwrap();
     engine.settings.wallet = WALLET.into();
@@ -88,8 +88,8 @@ fn switching_project_isolates_cached_data_jobs_and_response_generations() {
     );
     let old_generation = engine.generation;
     engine.settings.project = "fab".into();
-    engine.reset_wallet();
-    assert!(!engine.accepts_response("address", old_generation));
+    engine.reset_selection();
+    assert!(engine.accepts_response("address", old_generation));
     assert!(engine.accepts_response("fab_address", engine.generation));
     assert_eq!(
         engine.dashboard().unwrap()["address"]["data"]["summary"]["total_hashrate"],

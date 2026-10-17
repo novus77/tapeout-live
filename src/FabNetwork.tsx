@@ -2,7 +2,7 @@ import { object, type Dashboard } from "./bridge";
 import { Metric } from "./components";
 import { translator } from "./i18n";
 import { formatMetric } from "./metrics";
-import { SnapshotTime } from "./SnapshotTime";
+import { SnapshotTime, snapshotDetail } from "./SnapshotTime";
 
 export function FabNetwork({ data }: { data: Dashboard }) {
   const { language, interval } = data.settings,
@@ -25,6 +25,7 @@ export function FabNetwork({ data }: { data: Dashboard }) {
           value={market.token_price}
           unit="USDT"
           digits={4}
+          detail={`${snapshotDetail(data.market, language, interval)} · ${t("referenceQuote")}`}
         />
         <Metric
           title={t("networkPower")}
@@ -52,15 +53,6 @@ export function FabNetwork({ data }: { data: Dashboard }) {
           {t("snapshotCount")} <b>{formatMetric(network.miner_count, 0)}</b>
         </span>
       </div>
-      <div className="source-note">
-        {t("fabPrice")} ·{" "}
-        <SnapshotTime
-          snapshot={data.market}
-          language={language}
-          interval={interval}
-        />
-      </div>
-      <p className="helper">{t("referenceQuote")}</p>
     </section>
   );
 }

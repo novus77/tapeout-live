@@ -7,11 +7,12 @@ import {
   type Language,
   type Message,
 } from "./i18n";
-import { circuitTotals, formatMetric, type Row } from "./metrics";
+import { circuitTotals, formatMetric, freshness, type Row } from "./metrics";
 import { Metric } from "./components";
 import { FabNetwork } from "./FabNetwork";
 import { SnapshotTime } from "./SnapshotTime";
 import { Icon } from "./Icons";
+import { AccountSelector } from "./AccountSelector";
 export function NetworkSection({ data }: { data: Dashboard }) {
   const { language, interval } = data.settings,
     t = translator(language),
@@ -89,6 +90,15 @@ export function WalletSection({
     rows(data.address?.data.circuits),
     Number(summary.miner_count),
   );
+  const assetTime =
+    typeof assets.observed_at === "string" ? assets.observed_at : undefined;
+  const balanceState = freshness(
+    data.address ? { ...data.address, observedAt: assetTime } : null,
+    data.settings.interval,
+  );
+  const balanceDetail = fab
+    ? t("balanceUnavailable")
+    : `${t("balanceAge")} · ${assetTime && Number.isFinite(Date.parse(assetTime)) ? new Date(assetTime).toLocaleString(locale(language)) : t("unknown")} · ${t(balanceState === "fresh" ? "fresh" : balanceState === "stale" ? "stale" : "unknown")}`;
   async function copy() {
     try {
       await navigator.clipboard.writeText(wallet);
@@ -103,22 +113,14 @@ export function WalletSection({
       <div className="section-title">
         <h2 id="overview-title">{t("overview")}</h2>
         {accounts.length > 0 && (
-          <select
-            className="account-selector"
-            aria-label={t("choose")}
-            value={wallet}
+          <AccountSelector
+            accounts={accounts}
+            wallet={wallet}
+            language={language}
             disabled={disabled}
-            onChange={(e) =>
-              void select(e.target.value).catch((e) => onError(String(e)))
-            }
-          >
-            {accounts.map((a, i) => (
-              <option key={a.address} value={a.address}>
-                {a.name || `${t("account")} ${i + 1}`} · {a.address.slice(0, 6)}
-                …{a.address.slice(-4)}
-              </option>
-            ))}
-          </select>
+            select={select}
+            onError={onError}
+          />
         )}
       </div>
       {!wallet ? (
@@ -175,30 +177,14 @@ export function WalletSection({
             />
           </div>
           <div className="balance-row">
-            <span>
-              {t(fab ? "fabBalance" : "bemBalance")}{" "}
-              <b>
-                {formatMetric(fab ? assets.token : assets.bem, fab ? 8 : 4)}
-              </b>
+            <span title={balanceDetail} aria-description={balanceDetail}>
+              {t("bemBalance")}{" "}
+              <b>{formatMetric(fab ? undefined : assets.bem, 4)}</b>
             </span>
-            {!fab && (
-              <span>
-                {t("bnbBalance")} <b>{formatMetric(assets.bnb, 4)}</b>
-              </span>
-            )}
-          </div>
-          <div className="source-note">
-            {t("balanceAge")} ·{" "}
-            {assets.observed_at
-              ? new Date(String(assets.observed_at)).toLocaleString(
-                  locale(language),
-                )
-              : t("unavailable")}
-            {assets.observed_at &&
-            Date.now() - Date.parse(String(assets.observed_at)) >
-              data.settings.interval * 3000
-              ? ` · ${t("stale")}`
-              : ""}
+            <span title={balanceDetail} aria-description={balanceDetail}>
+              {t(fab ? "okbBalance" : "bnbBalance")}{" "}
+              <b>{formatMetric(fab ? undefined : assets.bnb, 4)}</b>
+            </span>
           </div>
         </>
       )}

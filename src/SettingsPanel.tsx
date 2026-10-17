@@ -76,16 +76,23 @@ export function SettingsPanel({
       {row(
         "language",
         <div className="segmented" role="group" aria-label={t("language")}>
-          {(["zh", "en"] as const).map((language) => (
-            <button
-              key={language}
-              disabled={disabled}
-              aria-pressed={settings.language === language}
-              onClick={() => change({ language })}
-            >
-              {language === "zh" ? "CN" : "EN"}
-            </button>
-          ))}
+          <button
+            disabled={disabled}
+            aria-pressed={settings.language === "zh"}
+            onClick={() => change({ language: "zh" })}
+          >
+            中文
+          </button>
+          <span className="language-divider" aria-hidden="true">
+            |
+          </span>
+          <button
+            disabled={disabled}
+            aria-pressed={settings.language === "en"}
+            onClick={() => change({ language: "en" })}
+          >
+            EN
+          </button>
         </div>,
       )}
       {toggle("autostart", "startupHint")}

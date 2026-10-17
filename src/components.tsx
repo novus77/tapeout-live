@@ -45,6 +45,7 @@ export function Metric({
   values,
   accent = false,
   digits = 2,
+  detail,
 }: {
   title: string;
   value: unknown;
@@ -54,10 +55,15 @@ export function Metric({
   values?: number[];
   accent?: boolean;
   digits?: number;
+  detail?: string;
 }) {
   const formatted = formatMetric(value, digits);
   return (
-    <article className={`metric ${accent ? "accent" : ""}`}>
+    <article
+      className={`metric ${accent ? "accent" : ""}`}
+      title={detail}
+      aria-description={detail}
+    >
       <div className="metric-label">
         {icon}
         {title}

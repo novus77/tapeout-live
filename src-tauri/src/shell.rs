@@ -65,8 +65,10 @@ fn update_settings(
             },
             |value| state.store.save_settings(value),
         )?;
-        if settings.wallet != state.settings.wallet || settings.project != state.settings.project {
+        if settings.wallet != state.settings.wallet {
             state.reset_wallet();
+        } else if settings.project != state.settings.project {
+            state.reset_selection();
         }
         state.settings = settings.clone();
     }
@@ -114,6 +116,14 @@ fn refresh_resource(
     }
     runtime::refresh(app, (*state).clone(), client.0.clone(), resource, true);
     Ok(())
+}
+#[tauri::command]
+fn refresh_all(
+    app: tauri::AppHandle,
+    state: State<Shared>,
+    client: State<Client>,
+) -> runtime::RefreshBatch {
+    runtime::refresh_all(app, (*state).clone(), client.0.clone())
 }
 #[tauri::command]
 fn set_network_visible(state: State<Shared>, visible: bool) {
@@ -346,6 +356,7 @@ pub fn run() {
             select_account,
             select_project,
             refresh_resource,
+            refresh_all,
             set_network_visible,
             clear_history,
             hide_panel

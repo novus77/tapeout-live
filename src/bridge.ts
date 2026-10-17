@@ -41,6 +41,15 @@ export type Dashboard = {
   market: Snapshot | null;
   network: Snapshot | null;
   jobs: Record<string, Job>;
+  refreshBatch?: RefreshBatch;
+};
+export type RefreshBatch = {
+  busy: boolean;
+  entries: {
+    resource: string;
+    status: "pending" | "refreshed" | "deferred" | "failed" | "cancelled";
+    error?: string;
+  }[];
 };
 export const defaults: Settings = {
   wallet: "",
@@ -58,11 +67,35 @@ export const defaults: Settings = {
 };
 export const native = "__TAURI_INTERNALS__" in window;
 let previewSettings: Settings = structuredClone(defaults);
+let previewBatch: RefreshBatch = { busy: false, entries: [] };
 export async function command<T>(
   name: string,
   args: Record<string, unknown> = {},
 ): Promise<T> {
   if (!native) {
+    if (name === "refresh_all") {
+      previewBatch = {
+        busy: false,
+        entries: [
+          "address",
+          "market",
+          "network",
+          "fab_address",
+          "fab_market",
+          "fab_network",
+        ]
+          .filter(
+            (resource) =>
+              previewSettings.wallet || !resource.endsWith("address"),
+          )
+          .map((resource) => ({
+            resource,
+            status: "deferred",
+            error: "Browser preview has no live data.",
+          })),
+      };
+      return structuredClone(previewBatch) as T;
+    }
     if (name === "update_settings") {
       previewSettings = structuredClone(args.settings as Settings);
       return structuredClone(previewSettings) as T;
@@ -92,6 +125,7 @@ export async function command<T>(
         market: null,
         network: null,
         jobs: {},
+        refreshBatch: structuredClone(previewBatch),
       } as T;
     if (name === "get_history") return [] as T;
     if (

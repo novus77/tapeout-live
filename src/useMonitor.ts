@@ -6,6 +6,7 @@ import {
   type Dashboard,
   type Settings,
   type Project,
+  type RefreshBatch,
 } from "./bridge";
 export const emptyDashboard: Dashboard = {
   settings: defaults,
@@ -182,6 +183,14 @@ export function useMonitor() {
       }
     }
   };
+  const refreshAll = async () => {
+    const ticket = revision.current;
+    const batch = await command<RefreshBatch>("refresh_all");
+    // Snapshot events carry authoritative progress and may arrive before IPC returns.
+    if (ticket === revision.current)
+      setData((previous) => ({ ...previous, refreshBatch: batch }));
+    else await load();
+  };
   return {
     data,
     error,
@@ -192,5 +201,6 @@ export function useMonitor() {
     selectProject,
     switching,
     ready,
+    refreshAll,
   };
 }
