@@ -57,6 +57,45 @@ svg {
   flex-direction: column;
   overflow: hidden;
 }
+.project-switch {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.project-switch button {
+  padding: 6px 18px;
+  border-radius: 5px;
+  color: var(--muted);
+}
+.project-switch button[aria-pressed="true"] {
+  background: #29443d;
+  color: var(--accent);
+}
+.project-switch > span {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--muted);
+}
+fieldset.manager-content {
+  border: 0;
+  margin: 0;
+  min-width: 0;
+}
+.power-history {
+  margin-top: 12px;
+  color: var(--accent);
+}
+.power-history .sparkline {
+  width: 100%;
+  height: 40px;
+}
+.metric-number,
+.balance-row b {
+  overflow-wrap: anywhere;
+}
 .header {
   height: 64px;
   padding: 14px 16px;

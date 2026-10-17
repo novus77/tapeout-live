@@ -1,4 +1,14 @@
 export const en = {
+  project: "Monitoring project",
+  indexing: "Indexing",
+  fabPrice: "FAB price",
+  fabBalance: "FAB balance",
+  running: "Running circuits",
+  notStarted: "Not started",
+  partialCircuits: "Loaded / indexed",
+  activityUnavailable: "Activity temporarily unavailable",
+  powerHistory: "Power history",
+  referenceQuote: "Reference quote · FAB/BEM × BEM/OKB × OKB/USDT",
   network: "Network",
   overview: "My mining",
   refresh: "Refresh",
@@ -96,6 +106,16 @@ export const en = {
 export type Message = keyof typeof en;
 export type Language = "zh" | "en";
 export const zh: Record<Message, string> = {
+  project: "监控项目",
+  indexing: "正在索引",
+  fabPrice: "FAB 价格",
+  fabBalance: "FAB 余额",
+  running: "运行中矿机",
+  notStarted: "未启动",
+  partialCircuits: "已加载 / 已收录",
+  activityUnavailable: "动态暂不可用",
+  powerHistory: "算力历史",
+  referenceQuote: "参考报价 · FAB/BEM × BEM/OKB × OKB/USDT",
   network: "全网概览",
   overview: "我的矿机",
   refresh: "刷新",

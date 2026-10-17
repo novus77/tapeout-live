@@ -1,16 +1,18 @@
 # TapeOut Live
 
-A small Windows/macOS tray application for monitoring a public TapeOut wallet and the network. TapeOutScan is the sole monitoring data provider. No private key, wallet connection, signing, or transaction submission is involved.
+A small Windows/macOS tray application for monitoring TapeOut/BEM and FabX/FAB public wallets and their networks. TapeOutScan is the sole monitoring data provider. No private key, wallet connection, signing, or transaction submission is involved.
 
 ## Features
 
 - Fixed 420 × 720 logical-point menu-bar/system-tray panel with mixed-DPI monitor positioning.
 - One page: network statistics first, selected wallet power/circuits/production/balances below, then circuits and events.
+- Persistent BEM/FAB selector changes the complete dashboard without changing the selected account. Project caches, histories, jobs, and alert baselines remain separate.
 - Up to 20 saved accounts, instant switching, and persistent Chinese/English interface selection. Legacy wallet preferences migrate automatically.
 - Network prices, pool weights, daily emission, low-frequency indexed circuit statistics, and material prices.
 - Searchable inline circuits and wallet activity; no tab navigation or secondary window.
 - Rust-owned background polling, SQLite snapshots, per-resource errors, and rate-limit backoff.
 - Opt-in power-drop and confirmed optimal-position notifications, pinning, and launch at login.
+- FAB balances and output retain eight-decimal string precision. Pending indexing, delayed pool snapshots, and reference-price freshness are shown separately. FAB champion events are not treated as BEM champion events.
 
 Missing data is displayed as unavailable. Production, material costs, values, and payback are provider estimates. Circuit activity is on-chain state, not physical hardware health. Grouped circuit breakdowns are omitted when their aggregation semantics cannot be established.
 
@@ -23,7 +25,7 @@ npm ci
 npm run tauri dev
 ```
 
-Expand the inline account manager to save a public wallet address and optional name. Select saved accounts directly above the wallet metrics. Switch language in the header. The panel has no chain badge, external links, close/back/quit controls, or manual resize handles. Clicking outside dismisses it unless pinned; Escape also dismisses. Notifications and launch at login default off. Address/market refresh defaults to 60 seconds; complete network statistics refresh every 15 minutes while the panel is visible. Only the selected wallet is actively polled.
+Expand the inline account manager to save a public wallet address and optional name. Select saved accounts directly above the wallet metrics. Switch language in the header and select BEM/FAB directly below it. The panel has no chain badge, external links, close/back/quit controls, or manual resize handles. Clicking outside dismisses it unless pinned; Escape also dismisses. Notifications and launch at login default off. Address/market refresh defaults to 60 seconds; complete network statistics refresh every 15 minutes while the panel is visible. Only the selected project and wallet are actively polled. FAB miner lists load at most 100 rows and explicitly show loaded/indexed counts when incomplete; summary totals are provider totals, not sums of the loaded subset.
 
 `npm run dev` opens a layout-only browser preview with no fabricated balances and no network connection. Live requests run in Rust, not through a browser proxy.
 
@@ -38,9 +40,10 @@ cargo fmt --manifest-path src-tauri/Cargo.toml --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 cargo test --manifest-path src-tauri/Cargo.toml
 cargo test --manifest-path src-tauri/Cargo.toml --test live_provider -- --ignored
+cargo test --manifest-path src-tauri/Cargo.toml live_fab_provider -- --ignored --nocapture
 ```
 
-The final command is an optional live provider contract check and consumes public API requests. Normal tests do not require the internet.
+The last two commands are optional live provider contract checks and consume public API requests using public sample addresses. Normal tests do not require the internet.
 
 ## Build
 
@@ -59,10 +62,13 @@ React renders normalized snapshots through a typed IPC bridge. Rust owns the HTT
 | Wallet | `https://tapeoutscan.io/api/address/{wallet}` |
 | Market | `https://tapeoutscan.io/api/home?view=market` |
 | Network | `https://tapeoutscan.io/api/home` |
+| FAB market and network | `https://tapeoutscan.io/api/fabx/home` |
+| FAB miners | `https://tapeoutscan.io/api/fabx/address?address={wallet}&tab=miners&pageSize=100` |
+| FAB activity | `https://tapeoutscan.io/api/fabx/address?address={wallet}&tab=activity&pageSize=20` |
 
 Redirects are disabled. The complete network response is large and is excluded from frequent polling. The provider does not have a confirmed versioned API contract; schema errors retain last-good snapshots. No fallback provider is configured.
 
-SQLite lives in the platform application-data directory under `io.tapeout.live`. Settings include saved public wallets, the selected wallet, locale, and preferences. Snapshots remain isolated by wallet; history retention is 30 days. No telemetry is enabled. See [the v0.2 specification](docs/specs/2026-10-16-unified-panel-v2.md) and [validation notes](docs/VALIDATION.md). The [original specification](docs/SPEC.md) remains as historical context where superseded.
+SQLite lives in the platform application-data directory under `io.tapeout.live`. Settings include saved public wallets, the selected project and wallet, locale, and preferences. Existing installations default to BEM. FAB uses namespaced resource keys without rewriting existing BEM data; history retention is 30 days. No telemetry is enabled. See [the FAB specification](docs/specs/2026-10-17-fab-monitoring.md), [the v0.2 specification](docs/specs/2026-10-16-unified-panel-v2.md), and [validation notes](docs/VALIDATION.md). The [original specification](docs/SPEC.md) remains as historical context where superseded.
 
 ## License
 

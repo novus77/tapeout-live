@@ -1,5 +1,6 @@
 pub mod alerts;
 pub mod domain;
+mod fab;
 mod provider;
 pub mod runtime;
 mod shell;

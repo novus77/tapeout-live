@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "TapeOut Live", "version": "0.2.0", "identifier": "io.tapeout.live",
+  "productName": "TapeOut Live", "version": "0.3.0", "identifier": "io.tapeout.live",
   "build": { "beforeDevCommand": "npm run dev", "devUrl": "http://localhost:1420", "beforeBuildCommand": "npm run build", "frontendDist": "../dist" },
   "app": {
     "windows": [{ "label": "main", "title": "TapeOut Live", "width": 420, "height": 720, "visible": false, "resizable": false, "maximizable": false, "decorations": false, "skipTaskbar": true }],

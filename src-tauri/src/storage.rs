@@ -125,6 +125,11 @@ impl Store {
                 ),
             ],
             "market" => vec![("bem", &snapshot.data["market"]["bem_usd"])],
+            "fab_address" => vec![
+                ("power", &snapshot.data["summary"]["total_hashrate"]),
+                ("daily", &snapshot.data["summary"]["estimated_daily"]),
+            ],
+            "fab_market" => vec![("fab", &snapshot.data["market"]["token_price"])],
             _ => vec![],
         };
         if let Some(observed) = &snapshot.observed_at {
@@ -133,7 +138,10 @@ impl Store {
                 .unwrap_or(0);
             for (metric, value) in metrics {
                 let latest: Option<String> = tx.query_row("SELECT MAX(source_time) FROM samples WHERE resource=?1 AND wallet=?2 AND metric=?3", params![snapshot.resource,wallet,metric], |r| r.get(0)).map_err(|e| e.to_string())?;
-                if value.is_number()
+                if (value.is_number()
+                    || value
+                        .as_str()
+                        .is_some_and(|s| s.parse::<f64>().is_ok_and(|n| n.is_finite() && n >= 0.0)))
                     && latest
                         .as_deref()
                         .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
@@ -147,7 +155,10 @@ impl Store {
                             wallet,
                             metric,
                             snapshot.fetched_at / 300,
-                            value.to_string(),
+                            value
+                                .as_str()
+                                .map(str::to_owned)
+                                .unwrap_or_else(|| value.to_string()),
                             observed
                         ],
                     )

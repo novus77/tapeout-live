@@ -12,15 +12,15 @@ pub struct FetchError {
 pub fn client() -> Result<Client, reqwest::Error> {
     Client::builder()
         .redirect(Policy::none())
-        .user_agent("TapeOutLive/0.1.0")
+        .user_agent("TapeOutLive/0.3.0")
         .timeout(Duration::from_secs(30))
         .build()
 }
-pub async fn fetch(
+async fn fetch_json(
     client: &Client,
     resource: &str,
     wallet: Option<&str>,
-) -> Result<Snapshot, FetchError> {
+) -> Result<serde_json::Value, FetchError> {
     let fail = |message: String| FetchError {
         message,
         retry_after: None,
@@ -30,6 +30,15 @@ pub async fn fetch(
         "address" => format!("/api/address/{}", wallet.unwrap_or_default()),
         "market" => "/api/home?view=market".into(),
         "network" => "/api/home".into(),
+        "fab_market" | "fab_network" => "/api/fabx/home".into(),
+        "fab_address" => format!(
+            "/api/fabx/address?address={}&tab=miners&pageSize=100",
+            wallet.unwrap_or_default()
+        ),
+        "fab_activity" => format!(
+            "/api/fabx/address?address={}&tab=activity&pageSize=20",
+            wallet.unwrap_or_default()
+        ),
         _ => return Err(fail("Unknown resource.".into())),
     };
     let mut response = client
@@ -96,9 +105,78 @@ pub async fn fetch(
         retry_after: None,
         terminal: true,
     })?;
-    normalize(resource, json, wallet).map_err(|message| FetchError {
+    Ok(json)
+}
+
+pub async fn fetch(
+    client: &Client,
+    resource: &str,
+    wallet: Option<&str>,
+) -> Result<Snapshot, FetchError> {
+    if resource.ends_with("address") && !wallet.is_some_and(crate::domain::valid_wallet) {
+        return Err(FetchError {
+            message: "Invalid wallet address.".into(),
+            retry_after: None,
+            terminal: true,
+        });
+    }
+    let mut input = fetch_json(client, resource, wallet).await?;
+    if resource == "fab_address" && input["data"].is_object() {
+        // Views can advance independently. Never attach events from another wallet/snapshot.
+        let activity = fetch_json(client, "fab_activity", wallet)
+            .await
+            .ok()
+            .filter(|a| {
+                a["data"]["address"] == input["data"]["address"]
+                    && a["data"]["status"]["active"]["id"].is_string()
+                    && a["data"]["status"]["active"]["id"]
+                        == input["data"]["status"]["active"]["id"]
+                    && a["data"]["rows"].is_array()
+            });
+        input["data"]["activityUnavailable"] = serde_json::json!(activity.is_none());
+        input["data"]["activity"] = activity
+            .map(|a| a["data"]["rows"].clone())
+            .unwrap_or(serde_json::Value::Null);
+    }
+    normalize(resource, input, wallet).map_err(|message| FetchError {
         message,
         retry_after: None,
         terminal: true,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    #[ignore = "Requires public TapeOutScan access"]
+    async fn live_fab_provider() {
+        let client = client().unwrap();
+        let wallet = "0xa96d30dc46be12b309cd7dc5fc2c55a2b9ce785b";
+        for resource in ["fab_market", "fab_network", "fab_address"] {
+            let snapshot = fetch(
+                &client,
+                resource,
+                if resource == "fab_address" {
+                    Some(wallet)
+                } else {
+                    None
+                },
+            )
+            .await
+            .unwrap();
+            assert_eq!(snapshot.resource, resource);
+            assert!(snapshot.observed_at.is_some());
+            assert!(snapshot.observed_block.is_some());
+            eprintln!(
+                "{resource}: source block {:?}, stale {}",
+                snapshot.observed_block, snapshot.stale
+            );
+            if resource == "fab_address" {
+                assert!(snapshot.data["summary"].is_object());
+                assert!(snapshot.data["circuits"].as_array().unwrap().len() <= 100);
+            }
+        }
+    }
 }

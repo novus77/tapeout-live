@@ -5,9 +5,11 @@ import { translator } from "./i18n";
 export function AccountManager({
   settings,
   save,
+  disabled = false,
 }: {
   settings: Settings;
   save: (settings: Settings) => Promise<Settings>;
+  disabled?: boolean;
 }) {
   const [form, setForm] = useState(settings),
     [address, setAddress] = useState(""),
@@ -20,7 +22,11 @@ export function AccountManager({
     setBusy(true);
     setError("");
     try {
-      let next = { ...form, language: settings.language };
+      let next = {
+        ...form,
+        language: settings.language,
+        project: settings.project,
+      };
       if (address.trim()) {
         const value = address.trim().toLowerCase();
         if (!/^0x[0-9a-f]{40}$/.test(value))
@@ -65,7 +71,7 @@ export function AccountManager({
         {t("accounts")}
         <span>{settings.accounts.length}</span>
       </summary>
-      <div className="manager-content">
+      <fieldset className="manager-content" disabled={disabled || busy}>
         <p className="helper">
           {t("accountHelp")} {t("addHelp")}
         </p>
@@ -215,8 +221,8 @@ export function AccountManager({
             </div>
           )}
         </div>
-        <p className="helper">{t("localOnly")} · v0.2.0</p>
-      </div>
+        <p className="helper">{t("localOnly")} · v0.3.0</p>
+      </fieldset>
     </details>
   );
 }

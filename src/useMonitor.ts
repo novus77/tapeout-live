@@ -5,6 +5,7 @@ import {
   onSnapshot,
   type Dashboard,
   type Settings,
+  type Project,
 } from "./bridge";
 export const emptyDashboard: Dashboard = {
   settings: defaults,
@@ -18,6 +19,8 @@ export function useMonitor() {
     [error, setError] = useState("");
   const revision = useRef(0);
   const expectedWallet = useRef<string | null>(null);
+  const expectedProject = useRef<Project | null>(null);
+  const [switching, setSwitching] = useState(false);
   const selection = useRef(0);
   const load = useCallback(async () => {
     const ticket = ++revision.current;
@@ -26,7 +29,9 @@ export function useMonitor() {
       if (
         ticket === revision.current &&
         (expectedWallet.current === null ||
-          next.settings.wallet === expectedWallet.current)
+          next.settings.wallet === expectedWallet.current) &&
+        (expectedProject.current === null ||
+          next.settings.project === expectedProject.current)
       ) {
         setData(next);
         setError("");
@@ -56,27 +61,43 @@ export function useMonitor() {
         ...previous,
         settings,
         address:
-          previous.settings.wallet === settings.wallet
+          previous.settings.wallet === settings.wallet &&
+          previous.settings.project === settings.project
             ? previous.address
             : null,
         jobs:
-          previous.settings.wallet === settings.wallet
+          previous.settings.wallet === settings.wallet &&
+          previous.settings.project === settings.project
             ? previous.jobs
             : {
                 ...previous.jobs,
                 address: { busy: true, nextAt: 0, terminal: false },
               },
+        market:
+          previous.settings.project === settings.project
+            ? previous.market
+            : null,
+        network:
+          previous.settings.project === settings.project
+            ? previous.network
+            : null,
       }));
       void load();
     },
     [load],
   );
   const save = async (settings: Settings) => {
-    const saved = await command<Settings>("update_settings", { settings });
-    apply(saved);
-    return saved;
+    setSwitching(true);
+    try {
+      const saved = await command<Settings>("update_settings", { settings });
+      apply(saved);
+      return saved;
+    } finally {
+      setSwitching(false);
+    }
   };
   const select = async (address: string) => {
+    setSwitching(true);
     const ticket = ++selection.current;
     ++revision.current;
     expectedWallet.current = address;
@@ -107,7 +128,47 @@ export function useMonitor() {
         void load();
       }
       throw error;
+    } finally {
+      if (ticket === selection.current) setSwitching(false);
     }
   };
-  return { data, error, setError, load, save, select };
+  const selectProject = async (project: Project) => {
+    const ticket = ++selection.current;
+    ++revision.current;
+    setSwitching(true);
+    expectedProject.current = project;
+    setData((previous) => ({
+      ...previous,
+      settings: { ...previous.settings, project },
+      address: null,
+      market: null,
+      network: null,
+      jobs: {},
+    }));
+    try {
+      const saved = await command<Settings>("select_project", { project });
+      if (ticket === selection.current) {
+        expectedProject.current = null;
+        apply(saved);
+      }
+    } catch (error) {
+      if (ticket === selection.current) {
+        expectedProject.current = null;
+        void load();
+      }
+      throw error;
+    } finally {
+      if (ticket === selection.current) setSwitching(false);
+    }
+  };
+  return {
+    data,
+    error,
+    setError,
+    load,
+    save,
+    select,
+    selectProject,
+    switching,
+  };
 }
