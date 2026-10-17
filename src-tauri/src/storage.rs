@@ -75,13 +75,43 @@ impl Store {
     pub fn save_settings(&self, settings: &Settings) -> Result<(), String> {
         // Keep a separate, validated copy so a damaged history DB does not lose wallet preferences.
         let payload = serde_json::to_vec(settings).map_err(|e| e.to_string())?;
-        std::fs::write(&self.settings_backup, payload).map_err(|e| e.to_string())?;
-        self.connection
-            .execute(
-                "INSERT OR REPLACE INTO settings VALUES(1,?1)",
-                [serde_json::to_string(settings).map_err(|e| e.to_string())?],
-            )
+        let previous_backup = match std::fs::read(&self.settings_backup) {
+            Ok(bytes) => Some(bytes),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+            Err(error) => return Err(error.to_string()),
+        };
+        let tx = self
+            .connection
+            .unchecked_transaction()
             .map_err(|e| e.to_string())?;
+        tx.execute(
+            "INSERT OR REPLACE INTO settings VALUES(1,?1)",
+            [serde_json::to_string(settings).map_err(|e| e.to_string())?],
+        )
+        .map_err(|e| e.to_string())?;
+        let pending = self.settings_backup.with_extension(format!(
+            "pending-{}-{}",
+            std::process::id(),
+            chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
+        ));
+        if let Err(error) = std::fs::write(&pending, payload)
+            .and_then(|_| std::fs::rename(&pending, &self.settings_backup))
+        {
+            let _ = std::fs::remove_file(&pending);
+            return Err(error.to_string());
+        }
+        if let Err(error) = tx.commit() {
+            let rollback = match previous_backup {
+                Some(bytes) => std::fs::write(&self.settings_backup, bytes),
+                None => std::fs::remove_file(&self.settings_backup),
+            };
+            return Err(match rollback {
+                Ok(()) => error.to_string(),
+                Err(rollback) => {
+                    format!("Settings commit failed: {error}; backup rollback failed: {rollback}")
+                }
+            });
+        }
         Ok(())
     }
     pub fn load(&self, resource: &str, wallet: &str) -> Result<Option<Snapshot>, String> {

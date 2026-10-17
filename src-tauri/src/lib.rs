@@ -1,8 +1,10 @@
 pub mod alerts;
+pub mod appearance;
 pub mod domain;
 mod fab;
 mod provider;
 pub mod runtime;
+mod settings_commit;
 mod shell;
 pub mod storage;
 pub mod window_layout;

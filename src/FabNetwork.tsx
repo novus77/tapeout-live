@@ -1,4 +1,3 @@
-import { GlobeIcon } from "@radix-ui/react-icons";
 import { object, type Dashboard } from "./bridge";
 import { Metric } from "./components";
 import { translator } from "./i18n";
@@ -13,10 +12,7 @@ export function FabNetwork({ data }: { data: Dashboard }) {
   return (
     <section className="network-section" aria-labelledby="network-title">
       <div className="section-title">
-        <h2 id="network-title">
-          <GlobeIcon />
-          {t("network")}
-        </h2>
+        <h2 id="network-title">{t("network")}</h2>
         <SnapshotTime
           snapshot={data.network}
           language={language}
