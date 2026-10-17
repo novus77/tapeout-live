@@ -2,6 +2,16 @@ import type { Snapshot } from "./bridge";
 import { locale, translator, type Language } from "./i18n";
 import { freshness } from "./metrics";
 
+export function snapshotDetail(
+  snapshot: Snapshot | null,
+  language: Language,
+  interval: number,
+) {
+  const t = translator(language);
+  const state = freshness(snapshot, interval);
+  return `${t("source")} · ${snapshot?.observedAt ?? t("unknown")} · ${t(state === "fresh" ? "fresh" : state === "stale" ? "stale" : state === "unknown" ? "unknown" : "unavailable")}`;
+}
+
 export function SnapshotTime({
   snapshot,
   language,

@@ -329,6 +329,196 @@ h2 {
 .account-selector {
   font-size: 10px;
   max-width: 188px;
+  min-width: 0;
+  position: relative;
+  margin-left: auto;
+}
+.account-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 188px;
+  padding: 4px 8px;
+  border-radius: 20px;
+  font-size: 10px;
+}
+.account-trigger span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.account-trigger svg,
+.account-options svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+.account-options {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 5px);
+  width: 260px;
+  max-width: calc(100vw - 40px);
+  max-height: 242px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px #0002;
+  padding: 4px;
+  z-index: 5;
+}
+.account-options button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  border: 0;
+  text-align: left;
+  padding: 8px;
+  gap: 8px;
+}
+.account-options button > span {
+  min-width: 0;
+}
+.account-options strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
+.account-options code {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.account-options [aria-selected="true"] {
+  background: var(--tint);
+}
+.account-row {
+  display: flex;
+  align-items: center;
+}
+.account-row .saved-account {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 8px;
+}
+.account-edit-button {
+  flex-shrink: 0;
+  font-size: 10px;
+  margin-right: 8px;
+  padding: 4px 7px;
+}
+.language-divider {
+  align-self: center;
+  color: var(--muted);
+}
+.history-sample {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  margin: 4px 0 5px;
+  font-size: 9px;
+  min-width: 0;
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+.history-sample strong {
+  color: var(--ink);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.history-sample time {
+  margin-left: auto;
+  font-size: 9px;
+}
+.chart-axis {
+  fill: var(--muted);
+  font-size: 8px;
+}
+.chart-grid {
+  stroke: var(--line);
+  stroke-width: 0.6;
+}
+.chart:has(svg) {
+  background: none;
+}
+.chart svg:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
+.batch-outcomes {
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.batch-outcomes p {
+  margin: 2px 0;
+}
+.account-edit input[readonly] {
+  font-size: 10px;
+}
+.section-title h2 {
+  flex-shrink: 0;
+}
+.account-edit label + label {
+  margin-top: 6px;
+}
+.history-sample.inspected {
+  border-top: 1px solid var(--line);
+  padding-top: 3px;
+}
+.history-sample.inspection-placeholder {
+  visibility: hidden;
+}
+.account-edit .form-actions {
+  flex-wrap: wrap;
+}
+.account-options button:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+.account-row .account-info {
+  flex: 1;
+}
+.account-edit-button:focus-visible {
+  outline: 1px solid var(--accent);
+}
+.account-selector:empty {
+  display: none;
+}
+.history-sample + .chart {
+  margin-top: 3px;
+}
+.account-edit form {
+  margin: 0;
+}
+.account-trigger:focus-visible {
+  outline: 1px solid var(--accent);
+}
+.account-options button:disabled {
+  cursor: default;
+}
+.account-options code {
+  white-space: nowrap;
+}
+.account-edit {
+  min-width: 0;
+}
+.account-edit input {
+  width: 100%;
+}
+.history-sample span {
+  flex-shrink: 0;
+}
+.balance-row [title] {
+  cursor: help;
+}
+.metric[title] {
+  cursor: help;
 }
 .address-row {
   display: flex;

@@ -18,7 +18,9 @@ export function AccountManager({
     [name, setName] = useState(""),
     [address, setAddress] = useState(""),
     [error, setError] = useState(""),
-    [removing, setRemoving] = useState("");
+    [removing, setRemoving] = useState(""),
+    [editing, setEditing] = useState(""),
+    [editName, setEditName] = useState("");
   async function persist(next: Settings) {
     setError("");
     try {
@@ -71,8 +73,10 @@ export function AccountManager({
         wallet,
         alias: accounts.find((a) => a.address === wallet)?.name ?? "",
       })
-    )
+    ) {
       setRemoving("");
+      setEditing("");
+    }
   }
   return (
     <section className="account-manager">
@@ -93,74 +97,104 @@ export function AccountManager({
       <div className="saved-accounts">
         {settings.accounts.map((account, i) => (
           <div className="account-item" key={account.address}>
-            <button
-              className="saved-account"
-              aria-pressed={settings.wallet === account.address}
-              disabled={disabled}
-              onClick={() =>
-                void select(account.address).catch((e) => setError(String(e)))
-              }
-            >
-              <span className="account-avatar">
-                {String(i + 1).padStart(2, "0")}
-              </span>
-              <span className="account-info">
-                <strong>{account.name || `${t("account")} ${i + 1}`}</strong>
-                <code>
-                  {account.address.slice(0, 8)}…{account.address.slice(-6)}
-                </code>
-              </span>
-              {settings.wallet === account.address && (
-                <span className="selected-label">{t("selected")}</span>
-              )}
-            </button>
-            <details className="account-edit">
-              <summary>
-                {t("editAccount")} {account.name || `${t("account")} ${i + 1}`}
-              </summary>
-              <form
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  const alias = String(
-                    new FormData(event.currentTarget).get("name") ?? "",
-                  ).trim();
-                  if ([...alias].length > 40) {
-                    setError(t("nameLimit"));
-                    return;
-                  }
-                  void persist({
-                    ...settings,
-                    accounts: settings.accounts.map((a) =>
-                      a.address === account.address ? { ...a, name: alias } : a,
-                    ),
-                    alias:
-                      settings.wallet === account.address
-                        ? alias
-                        : settings.alias,
-                  });
+            <div className="account-row">
+              <button
+                className="saved-account"
+                aria-pressed={settings.wallet === account.address}
+                disabled={disabled}
+                onClick={() =>
+                  void select(account.address).catch((e) => setError(String(e)))
+                }
+              >
+                <span className="account-avatar">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <span className="account-info">
+                  <strong>{account.name || `${t("account")} ${i + 1}`}</strong>
+                  <code>
+                    {account.address.slice(0, 8)}…{account.address.slice(-6)}
+                  </code>
+                </span>
+                {settings.wallet === account.address && (
+                  <span className="selected-label">{t("selected")}</span>
+                )}
+              </button>
+              <button
+                className="account-edit-button"
+                disabled={disabled}
+                aria-label={`${t("editAccount")} ${account.name || `${t("account")} ${i + 1}`}`}
+                onClick={() => {
+                  setEditing(account.address);
+                  setEditName(account.name);
+                  setError("");
                 }}
               >
-                <label>
-                  {t("name")}
-                  <input
-                    name="name"
-                    defaultValue={account.name}
-                    disabled={disabled}
-                  />
-                </label>
-                <div className="form-actions">
-                  <button disabled={disabled}>{t("saveAccount")}</button>
-                  <button
-                    type="button"
-                    disabled={disabled}
-                    aria-label={`${t("remove")} ${account.name || account.address}`}
-                    onClick={() => setRemoving(account.address)}
-                  >
-                    {t("remove")}
-                  </button>
-                </div>
-              </form>
-            </details>
+                {t("edit")}
+              </button>
+            </div>
+            {editing === account.address && (
+              <div className="account-edit">
+                <form
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    const alias = editName.trim();
+                    if ([...alias].length > 40) {
+                      setError(t("nameLimit"));
+                      return;
+                    }
+                    void persist({
+                      ...settings,
+                      accounts: settings.accounts.map((a) =>
+                        a.address === account.address
+                          ? { ...a, name: alias }
+                          : a,
+                      ),
+                      alias:
+                        settings.wallet === account.address
+                          ? alias
+                          : settings.alias,
+                    }).then((saved) => {
+                      if (saved) setEditing("");
+                    });
+                  }}
+                >
+                  <label>
+                    {t("name")}
+                    <input
+                      name="name"
+                      value={editName}
+                      onChange={(event) => setEditName(event.target.value)}
+                      disabled={disabled}
+                    />
+                  </label>
+                  <label>
+                    {t("address")}
+                    <input readOnly value={account.address} />
+                  </label>
+                  <div className="form-actions">
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => {
+                        setEditing("");
+                        setError("");
+                      }}
+                    >
+                      {t("cancel")}
+                    </button>
+                    <button disabled={disabled}>{t("saveAccount")}</button>
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      aria-label={`${t("remove")} ${account.name || account.address}`}
+                      onClick={() => setRemoving(account.address)}
+                    >
+                      {t("remove")}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
           </div>
         ))}
       </div>

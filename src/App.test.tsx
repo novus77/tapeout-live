@@ -93,7 +93,7 @@ function setup() {
 it("renders network above the selected wallet without tabs or external controls", async () => {
   setup();
   const { container } = render(<App />);
-  await screen.findByDisplayValue("Alpha · 0x0000…0001");
+  await screen.findByRole("button", { name: "选择账户: Alpha" });
   const headings = screen
     .getAllByRole("heading", { level: 2 })
     .map((h) => h.textContent);
@@ -164,7 +164,7 @@ it("adds and selects an account inline, cancels without writing, and confirms re
   fireEvent.click(screen.getByRole("button", { name: "添加账户" }));
   fireEvent.click(screen.getByRole("button", { name: "取消" }));
   expect(screen.queryByRole("textbox", { name: "钱包地址" })).toBeNull();
-  fireEvent.click(screen.getByText("编辑账户 Gamma"));
+  fireEvent.click(screen.getByRole("button", { name: "编辑账户 Gamma" }));
   fireEvent.click(screen.getByRole("button", { name: "移除 Gamma" }));
   expect((mock.dashboard as Dashboard).settings.accounts).toHaveLength(3);
   fireEvent.click(screen.getByRole("button", { name: "确认移除" }));
@@ -175,8 +175,11 @@ it("adds and selects an account inline, cancels without writing, and confirms re
 it("switches accounts and locale in the same page", async () => {
   setup();
   render(<App />);
-  const selector = await screen.findByRole("combobox", { name: "选择账户" });
-  fireEvent.change(selector, { target: { value: second } });
+  const selector = await screen.findByRole("button", {
+    name: "选择账户: Alpha",
+  });
+  fireEvent.click(selector);
+  fireEvent.click(screen.getByRole("option", { name: `Beta ${second}` }));
   await waitFor(() => expect(screen.getByText("222")).toBeTruthy());
   expect(screen.queryByText("111")).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "设置" }));
@@ -217,7 +220,7 @@ it("clears the legacy alias when the last account is removed", async () => {
   render(<App />);
   await screen.findByText("111");
   fireEvent.click(screen.getByRole("button", { name: "设置" }));
-  fireEvent.click(screen.getByText("编辑账户 Alpha"));
+  fireEvent.click(screen.getByRole("button", { name: "编辑账户 Alpha" }));
   fireEvent.click(screen.getByRole("button", { name: "移除 Alpha" }));
   fireEvent.click(screen.getByRole("button", { name: "确认移除" }));
   await waitFor(() => expect(data.settings.wallet).toBe(""));
@@ -259,7 +262,9 @@ it("synchronously gates rapid settings mutations and preserves data on failure",
 it("clears the previous wallet while a switch is awaiting native confirmation", async () => {
   setup();
   render(<App />);
-  const selector = await screen.findByRole("combobox", { name: "选择账户" });
+  const selector = await screen.findByRole("button", {
+    name: "选择账户: Alpha",
+  });
   const original = mock.command.getMockImplementation()!;
   let complete: (() => void) | undefined;
   mock.command.mockImplementation(
@@ -270,7 +275,8 @@ it("clears the previous wallet while a switch is awaiting native confirmation", 
           })
         : original(name, args),
   );
-  fireEvent.change(selector, { target: { value: second } });
+  fireEvent.click(selector);
+  fireEvent.click(screen.getByRole("option", { name: `Beta ${second}` }));
   try {
     expect(screen.queryByText("111")).toBeNull();
   } finally {
@@ -321,9 +327,10 @@ it("switches the complete dashboard to FAB without showing old BEM metrics", asy
   await waitFor(() => expect(screen.queryByText("111")).toBeNull());
   complete?.();
   await screen.findByText("333");
-  expect(screen.getByText("FAB 余额")).toBeTruthy();
+  expect(screen.getByText("BEM 余额")).toBeTruthy();
+  expect(screen.getByText("OKB 余额")).toBeTruthy();
   expect(screen.queryByText("BNB 余额")).toBeNull();
-  expect(screen.getByText("0.12345678")).toBeTruthy();
+  expect(screen.queryByText("0.12345678")).toBeNull();
   expect(
     screen.getByRole("button", { name: "FAB" }).getAttribute("aria-pressed"),
   ).toBe("true");
@@ -331,7 +338,7 @@ it("switches the complete dashboard to FAB without showing old BEM metrics", asy
   fireEvent.click(screen.getByRole("button", { name: "EN" }));
   await screen.findByRole("button", { name: "Settings" });
   fireEvent.click(screen.getByRole("button", { name: "Settings" }));
-  await screen.findByText("FAB balance");
+  await screen.findByText("OKB balance");
 });
 
 it("retains FAB selection while switching accounts and locale", async () => {
@@ -348,9 +355,8 @@ it("retains FAB selection while switching accounts and locale", async () => {
   };
   render(<App />);
   await screen.findByText("0.00000001");
-  fireEvent.change(screen.getByRole("combobox", { name: "选择账户" }), {
-    target: { value: second },
-  });
+  fireEvent.click(screen.getByRole("button", { name: "选择账户: Alpha" }));
+  fireEvent.click(screen.getByRole("option", { name: `Beta ${second}` }));
   await screen.findByText("222");
   expect((mock.dashboard as Dashboard).settings.project).toBe("fab");
   expect(
@@ -360,8 +366,8 @@ it("retains FAB selection while switching accounts and locale", async () => {
   fireEvent.click(screen.getByRole("button", { name: "EN" }));
   await screen.findByRole("button", { name: "Settings" });
   fireEvent.click(screen.getByRole("button", { name: "Settings" }));
-  await screen.findByText("FAB balance");
-  expect(screen.queryByText("BEM balance")).toBeNull();
+  await screen.findByText("OKB balance");
+  expect(screen.getByText("BEM balance")).toBeTruthy();
 });
 
 it("distinguishes FAB indexing from an indexed empty wallet", async () => {
@@ -374,4 +380,141 @@ it("distinguishes FAB indexing from an indexed empty wallet", async () => {
   await screen.findAllByText("正在索引");
   expect(screen.queryByText("暂无已收录矿机")).toBeNull();
   expect(screen.queryByText("111")).toBeNull();
+});
+
+it.each(["bem", "fab"] as const)(
+  "admits global refresh from %s while automatic jobs run and preserves authoritative batch completion",
+  async (project) => {
+    setup();
+    const data = mock.dashboard as Dashboard;
+    data.settings.project = project;
+    data.jobs = { address: { busy: true, nextAt: 0, terminal: false } };
+    const original = mock.command.getMockImplementation()!;
+    let complete: ((value: unknown) => void) | undefined;
+    mock.command.mockImplementation(
+      (name: string, args?: Record<string, unknown>) =>
+        name === "refresh_all"
+          ? new Promise((resolve) => {
+              complete = resolve;
+            })
+          : original(name, args),
+    );
+    render(<App />);
+    await screen.findByText("111");
+    const refresh = screen.getByRole("button", {
+      name: "刷新",
+    }) as HTMLButtonElement;
+    expect(refresh.disabled).toBe(false);
+    fireEvent.click(refresh);
+    fireEvent.click(refresh);
+    expect(
+      mock.command.mock.calls.filter(([name]) => name === "refresh_all"),
+    ).toHaveLength(1);
+    expect(refresh.disabled).toBe(true);
+    expect(refresh.getAttribute("aria-busy")).toBe("true");
+    data.refreshBatch = {
+      busy: false,
+      entries: [
+        { resource: "fab_market", status: "failed", error: "Source failed" },
+        { resource: "network", status: "deferred" },
+      ],
+    };
+    await act(async () => mock.updated?.());
+    await screen.findByText(/FAB.*失败.*Source failed/);
+    await screen.findByText(/BEM.*暂缓/);
+    await act(async () =>
+      complete?.({
+        busy: true,
+        entries: [{ resource: "fab_market", status: "pending" }],
+      }),
+    );
+    await waitFor(() => expect(refresh.disabled).toBe(false));
+  },
+);
+
+it("releases refresh admission on command failure and respects consumed dropdown Escape", async () => {
+  setup();
+  const original = mock.command.getMockImplementation()!;
+  mock.command.mockImplementation(
+    (name: string, args?: Record<string, unknown>) =>
+      name === "refresh_all"
+        ? Promise.reject(new Error("Admission failed"))
+        : original(name, args),
+  );
+  render(<App />);
+  const trigger = await screen.findByRole("button", {
+    name: "选择账户: Alpha",
+  });
+  fireEvent.click(trigger);
+  fireEvent.keyDown(screen.getAllByRole("option")[0], { key: "Escape" });
+  expect(mock.command.mock.calls.some(([name]) => name === "hide_panel")).toBe(
+    false,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "刷新" }));
+  await screen.findByText(/Admission failed/);
+  expect(
+    (screen.getByRole("button", { name: "刷新" }) as HTMLButtonElement)
+      .disabled,
+  ).toBe(false);
+});
+
+it("keeps global batch busy after a view switch and shows inactive-project cancellation", async () => {
+  setup();
+  const data = mock.dashboard as Dashboard;
+  data.refreshBatch = {
+    busy: true,
+    entries: [{ resource: "fab_address", status: "pending" }],
+  };
+  const original = mock.command.getMockImplementation()!;
+  mock.command.mockImplementation(
+    (name: string, args?: Record<string, unknown>) => {
+      if (name === "select_project") {
+        data.settings = { ...data.settings, project: "fab" };
+        return Promise.resolve(data.settings);
+      }
+      return original(name, args);
+    },
+  );
+  render(<App />);
+  await screen.findByText("111");
+  fireEvent.click(screen.getByRole("button", { name: "FAB" }));
+  await waitFor(() =>
+    expect(
+      (screen.getByRole("button", { name: "FAB" }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(false),
+  );
+  expect(
+    (screen.getByRole("button", { name: "刷新" }) as HTMLButtonElement)
+      .disabled,
+  ).toBe(true);
+  data.refreshBatch = {
+    busy: false,
+    entries: [{ resource: "address", status: "cancelled" }],
+  };
+  await act(async () => mock.updated?.());
+  await screen.findByText(/BEM.*已取消/);
+  expect(
+    (screen.getByRole("button", { name: "刷新" }) as HTMLButtonElement)
+      .disabled,
+  ).toBe(false);
+});
+
+it("restores the previous selected account after native selection fails", async () => {
+  setup();
+  const original = mock.command.getMockImplementation()!;
+  mock.command.mockImplementation(
+    (name: string, args?: Record<string, unknown>) =>
+      name === "select_account"
+        ? Promise.reject(new Error("Account rejected"))
+        : original(name, args),
+  );
+  render(<App />);
+  fireEvent.click(
+    await screen.findByRole("button", { name: "选择账户: Alpha" }),
+  );
+  fireEvent.click(screen.getByRole("option", { name: `Beta ${second}` }));
+  await screen.findByRole("button", { name: "选择账户: Alpha" });
+  await screen.findByText("111");
+  expect((mock.dashboard as Dashboard).settings.wallet).toBe(first);
 });

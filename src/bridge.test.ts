@@ -30,6 +30,15 @@ it("keeps browser preview settings only in memory with empty real-data surfaces"
   });
   expect([data.address, data.market, data.network]).toEqual([null, null, null]);
   expect(await command("get_history")).toEqual([]);
+  const batch = await command<import("./bridge").RefreshBatch>("refresh_all");
+  expect(batch.busy).toBe(false);
+  expect(batch.entries).toHaveLength(6);
+  expect(batch.entries.every((entry) => entry.status === "deferred")).toBe(
+    true,
+  );
+  expect(
+    (await command<import("./bridge").Dashboard>("get_dashboard")).refreshBatch,
+  ).toEqual(batch);
   await expect(
     command("refresh_resource", { resource: "network" }),
   ).resolves.toBeUndefined();
@@ -44,4 +53,9 @@ it("keeps browser preview settings only in memory with empty real-data surfaces"
     (await reset.command<import("./bridge").Dashboard>("get_dashboard"))
       .settings,
   ).toEqual(reset.defaults);
+  expect(
+    (
+      await reset.command<import("./bridge").RefreshBatch>("refresh_all")
+    ).entries.map((entry) => entry.resource),
+  ).toEqual(["market", "network", "fab_market", "fab_network"]);
 });

@@ -53,7 +53,8 @@ it("discards a late previous-account history and never draws fewer than two samp
       { time: Date.now() / 1000, value: "7" },
     ]),
   );
-  expect(screen.queryByRole("img")).toBeNull();
+  expect(screen.queryByRole("slider")).toBeNull();
+  expect(document.querySelector("polyline")).toBeNull();
   expect(screen.getByText("正在积累趋势")).toBeTruthy();
 });
 it("does not request local history until native selection has completed", () => {
