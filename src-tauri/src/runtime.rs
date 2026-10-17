@@ -292,6 +292,7 @@ impl Engine {
                     BatchStatus::Refreshed
                 }
                 result => {
+                    job.terminal = false;
                     job.error = Some(match result {
                         Ok(false) => "Provider block is older than the cached block.".into(),
                         Err(error) => format!("Local cache: {error}"),
@@ -737,6 +738,65 @@ mod tests {
         }
         assert!(!engine.refresh_batch.busy);
         assert_eq!(engine.refresh_batch.entries[0].status, BatchStatus::Failed);
+        assert_eq!(
+            engine
+                .store
+                .load("market", "")
+                .unwrap()
+                .unwrap()
+                .observed_block,
+            Some(20)
+        );
+    }
+    fn retry_after_terminal_failure(engine: &mut Engine) -> (Request, i64) {
+        let request = engine.admit("market".into(), true, 1000).unwrap();
+        engine.complete(
+            &request,
+            Err(provider::FetchError {
+                message: "HTTP 404".into(),
+                retry_after: None,
+                terminal: true,
+            }),
+            1001,
+        );
+        assert!(engine.jobs["market"].terminal);
+        let retry_at = engine.jobs["market"].next_at;
+        (
+            engine.admit("market".into(), true, retry_at).unwrap(),
+            retry_at + 1,
+        )
+    }
+    #[test]
+    fn cache_write_failure_after_terminal_provider_recovery_is_retryable() {
+        let (dir, mut engine) = engine();
+        let (request, now) = retry_after_terminal_failure(&mut engine);
+        let database = rusqlite::Connection::open(dir.path().join("cache.sqlite")).unwrap();
+        database.execute_batch("CREATE TRIGGER reject_snapshot BEFORE INSERT ON snapshots BEGIN SELECT RAISE(ABORT, 'test write failure'); END;").unwrap();
+        let mut value = snapshot(0.0);
+        value.resource = "market".into();
+        engine.complete(&request, Ok(value), now);
+        let job = &engine.jobs["market"];
+        assert!(!job.terminal);
+        assert!(!job.busy);
+        assert_eq!(job.failures, 2);
+        assert_eq!(job.next_at, now + 120);
+        assert!(job.error.as_deref().unwrap().starts_with("Local cache:"));
+    }
+    #[test]
+    fn outdated_block_after_terminal_provider_recovery_is_retryable() {
+        let (_dir, mut engine) = engine();
+        let mut value = snapshot(0.0);
+        value.resource = "market".into();
+        value.observed_block = Some(20);
+        engine.store.save(&value).unwrap();
+        let (request, now) = retry_after_terminal_failure(&mut engine);
+        value.observed_block = Some(19);
+        engine.complete(&request, Ok(value), now);
+        let job = &engine.jobs["market"];
+        assert!(!job.terminal);
+        assert!(!job.busy);
+        assert_eq!(job.failures, 2);
+        assert_eq!(job.next_at, now + 120);
         assert_eq!(
             engine
                 .store
