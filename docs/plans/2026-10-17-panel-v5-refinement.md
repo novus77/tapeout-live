@@ -16,13 +16,13 @@ Work in the existing clean `codex/panel-v5-refinement` checkout. No new worktree
 
 Files: `src-tauri/src/runtime.rs`, `src-tauri/src/shell.rs`; add a focused batch/request module if required to keep scheduling and request-state transitions testable.
 
-- [ ] Write failing tests for a manual batch containing both projects' address/market/network jobs, empty-wallet omission, duplicate/in-flight admission, cooldown/backoff, and independent completion outcomes.
-- [ ] Write failing tests for project-switch acceptance, account switch-away/back rejection, token-safe late completion, and selected-project-only alert eligibility.
-- [ ] Run `cargo test` and record the expected failures before production changes.
-- [ ] Implement explicit request context and typed batch status. Request identity includes account revision for address resources and per-job token; project changes reset only alert context, not valid request/cache ownership. Keep bounded request concurrency of two and existing retry rules.
-- [ ] Register `refresh_all`; retain existing `refresh_resource` compatibility. Serialize all batch admission under the engine lock. In-flight resources belong to the batch until they settle; deferred jobs are reported, not silently successful.
-- [ ] Expose `refreshBatch` independently of selected dashboard jobs. Each resource entry has resource, status (`pending`, `refreshed`, `deferred`, `failed`, `cancelled`) and optional error; busy derives from pending entries. Resource names are existing BEM keys and FAB-prefixed keys. Never mix inactive-project baselines/notifications.
-- [ ] Run Rust tests, formatting, and clippy. Commit only the backend task files after self-review; then obtain specification review and code-quality review.
+- [x] Write failing tests for a manual batch containing both projects' address/market/network jobs, empty-wallet omission, duplicate/in-flight admission, cooldown/backoff, and independent completion outcomes.
+- [x] Write failing tests for project-switch acceptance, account switch-away/back rejection, token-safe late completion, and selected-project-only alert eligibility.
+- [x] Run `cargo test` and record the expected failures before production changes.
+- [x] Implement explicit request context and typed batch status. Request identity includes account revision for address resources and per-job token; project changes reset only alert context, not valid request/cache ownership. Keep bounded request concurrency of two and existing retry rules.
+- [x] Register `refresh_all`; retain existing `refresh_resource` compatibility. Serialize all batch admission under the engine lock. In-flight resources belong to the batch until they settle; deferred jobs are reported, not silently successful.
+- [x] Expose `refreshBatch` independently of selected dashboard jobs. Each resource entry has resource, status (`pending`, `refreshed`, `deferred`, `failed`, `cancelled`) and optional error; busy derives from pending entries. Resource names are existing BEM keys and FAB-prefixed keys. Never mix inactive-project baselines/notifications.
+- [x] Run Rust tests, formatting, and clippy. Commit only the backend task files after self-review; then obtain specification review and code-quality review.
 
 Frontend contract (additive dashboard field):
 
@@ -41,15 +41,15 @@ type RefreshBatch = { busy: boolean; entries: RefreshEntry[] };
 
 Files: `src/AccountSelector.tsx` (new), `src/AccountManager.tsx`, `src/MonitorSections.tsx`, `src/FabNetwork.tsx`, `src/PowerHistory.tsx`, `src/App.tsx`, `src/bridge.ts`, `src/SettingsPanel.tsx`, `src/i18n.ts`, `src/styles.css`, corresponding tests.
 
-- [ ] Write and run failing UI tests for shared account selection, keyboard/focus/dismissal, trailing Edit, rename/cancel/removal, and `中文 | EN`.
-- [ ] Write and run failing chart tests for latest values/times, constant domains, Y labels, single-sample state, and nearest-point keyboard/pointer inspection.
-- [ ] Write and run failing integration tests for `refresh_all`, global busy across project changes, visible inactive-project failure/deferred outcomes, exact row removal, and unsupported FAB BEM/OKB balances without relabeling existing assets.
-- [ ] Implement the shared account-name popover/listbox with short addresses and selection checkmarks. Avoid nested buttons and preserve serialized persistence/error rollback.
-- [ ] Replace permanent account editing disclosures with trailing Edit buttons and conditional rename/remove forms. Keep public address read-only. Preserve existing validation and settings order.
-- [ ] Remove marked full-width supporting rows while retaining exact source detail and independent price/address freshness. Render BEM/BNB in BEM and BEM/OKB in FAB, with unsupported cells explicitly unavailable; do not add guessed provider mappings.
-- [ ] Implement numeric chart labels, latest sample time/value, and keyboard/pointer sample inspection within reserved margins. Never fabricate samples; clear selection on account/project changes and honor suspended native selection.
-- [ ] Add the typed refresh contract to native and memory-preview adapters. Render batch-wide progress/outcomes without falsely marking deferred/failed work updated. Keep active-project automatic jobs compatible.
-- [ ] Run `npm test`, `npm run typecheck`, `npm run lint`, `npm run format:check`, and `npm run build`. Commit focused files after self-review, then obtain specification and code-quality review.
+- [x] Write and run failing UI tests for shared account selection, keyboard/focus/dismissal, trailing Edit, rename/cancel/removal, and `中文 | EN`.
+- [x] Write and run failing chart tests for latest values/times, constant domains, Y labels, single-sample state, and nearest-point keyboard/pointer inspection.
+- [x] Write and run failing integration tests for `refresh_all`, global busy across project changes, visible inactive-project failure/deferred outcomes, exact row removal, and unsupported FAB BEM/OKB balances without relabeling existing assets.
+- [x] Implement the shared account-name popover/listbox with short addresses and selection checkmarks. Avoid nested buttons and preserve serialized persistence/error rollback.
+- [x] Replace permanent account editing disclosures with trailing Edit buttons and conditional rename/remove forms. Keep public address read-only. Preserve existing validation and settings order.
+- [x] Remove marked full-width supporting rows while retaining exact source detail and independent price/address freshness. Render BEM/BNB in BEM and BEM/OKB in FAB, with unsupported cells explicitly unavailable; do not add guessed provider mappings.
+- [x] Implement numeric chart labels, latest sample time/value, and keyboard/pointer sample inspection within reserved margins. Never fabricate samples; clear selection on account/project changes and honor suspended native selection.
+- [x] Add the typed refresh contract to native and memory-preview adapters. Render batch-wide progress/outcomes without falsely marking deferred/failed work updated. Keep active-project automatic jobs compatible.
+- [x] Run `npm test`, `npm run typecheck`, `npm run lint`, `npm run format:check`, and `npm run build`. Commit focused files after self-review, then obtain specification and code-quality review.
 
 Representative behavior assertions:
 
@@ -63,8 +63,8 @@ expect(mock.command).toHaveBeenCalledWith("refresh_all");
 
 ## Task 3: Integration, visual validation, and PR handoff
 
-- [ ] Inspect the full diff against SPAC v5 and fix reviewer findings with regression tests.
-- [ ] Run the full frontend commands above and `cargo fmt --check`, `cargo test`, `cargo clippy --all-targets -- -D warnings`.
-- [ ] Inspect the real preview with synthetic data at 420 × 720; exercise both projects/themes/languages, long accounts, account editor, empty/flat/varying history, focus, and refresh errors. Save only synthetic screenshots if committed.
-- [ ] Add `docs/validation/panel-v5/RESULTS.md` with actual commands/results, official balance-data limitation, native/Windows coverage gaps, and no-install statement.
+- [x] Inspect the full diff against SPAC v5 and fix reviewer findings with regression tests.
+- [x] Run the full frontend commands above and `cargo fmt --check`, `cargo test`, `cargo clippy --all-targets -- -D warnings`.
+- [x] Inspect the real preview with synthetic data at 420 × 720; exercise both projects/themes/languages, long accounts, account editor, empty/flat/varying history, focus, and refresh errors. Save only synthetic screenshots if committed.
+- [x] Add `docs/validation/panel-v5/RESULTS.md` with actual commands/results, official balance-data limitation, native/Windows coverage gaps, and no-install statement.
 - [ ] Push implementation commits to PR #4, inspect macOS/Windows CI, fix in-scope failures, and mark ready only after review/verification. Do not merge, publish, or replace the installed app.
