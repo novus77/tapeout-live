@@ -100,6 +100,56 @@ impl Engine {
             json!({"settings":self.settings,"address":if self.settings.wallet.is_empty(){None}else{self.store.load(&self.settings.resource_key("address"),&self.settings.wallet)?},"market":self.store.load(&self.settings.resource_key("market"),"")?,"network":self.store.load(&self.settings.resource_key("network"),"")?,"jobs":self.jobs.iter().filter_map(|(key,job)| ["address","market","network"].into_iter().find(|name|self.settings.resource_key(name)==*key).map(|name|(name,job))).collect::<HashMap<_,_>>(),"refreshBatch":self.refresh_batch}),
         )
     }
+    fn due_resources(&mut self, now: i64) -> Vec<String> {
+        let resumed = now - self.last_tick > 45;
+        self.last_tick = now;
+        if resumed {
+            self.baseline = None;
+            self.pending_alert = None;
+        }
+        if resumed {
+            for job in self.jobs.values_mut() {
+                if !job.busy && !job.terminal && job.failures == 0 {
+                    job.next_at = job.next_at.min(now).max(job.last_attempt + 10);
+                }
+            }
+        }
+        [
+            "address",
+            "market",
+            "network",
+            "fab_address",
+            "fab_market",
+            "fab_network",
+        ]
+        .into_iter()
+        .filter(|resource| {
+            (!resource.ends_with("address")
+                || self
+                    .settings
+                    .wallet_supports(if resource.starts_with("fab_") {
+                        "fab"
+                    } else {
+                        "bem"
+                    }))
+                && self
+                    .jobs
+                    .get(*resource)
+                    .is_none_or(|job| !job.busy && !job.terminal && job.next_at <= now)
+        })
+        .map(str::to_owned)
+        .collect()
+    }
+    pub fn set_interval(&mut self, interval: u64) {
+        if interval != self.settings.interval {
+            for job in self.jobs.values_mut() {
+                if !job.busy && !job.terminal && job.failures == 0 {
+                    job.next_at = job.last_attempt + interval as i64;
+                }
+            }
+            self.settings.interval = interval;
+        }
+    }
     pub fn reset_wallet(&mut self) {
         self.generation += 1;
         let mut cancelled = Vec::new();
@@ -277,12 +327,7 @@ impl Engine {
                     job.error = None;
                     job.failures = 0;
                     job.terminal = false;
-                    job.next_at = now
-                        + if resource.ends_with("network") {
-                            900
-                        } else {
-                            self.settings.interval as i64
-                        };
+                    job.next_at = now + self.settings.interval as i64;
                     if eligible {
                         let prefix = format!(
                             "{} · {}",
@@ -446,38 +491,22 @@ impl Engine {
 pub fn launch(app: AppHandle, shared: Shared, client: reqwest::Client) {
     tauri::async_runtime::spawn(async move {
         loop {
-            let due = {
-                let mut state = shared.lock().unwrap();
-                let now = Utc::now().timestamp();
-                if now - state.last_tick > 45 {
-                    state.baseline = None;
-                    state.pending_alert = None;
-                    for (name, job) in &mut state.jobs {
-                        if !name.ends_with("network") && !job.terminal && job.failures == 0 {
-                            job.next_at = job.next_at.min(now).max(job.last_attempt + 10);
-                        }
-                    }
-                }
-                state.last_tick = now;
-                ["address", "market", "network"]
-                    .into_iter()
-                    .filter(|name| {
-                        (*name != "address" || !state.settings.wallet.is_empty())
-                            && (*name != "network" || state.network_visible)
-                            && state
-                                .jobs
-                                .get(&state.settings.resource_key(name))
-                                .is_none_or(|j| !j.busy && !j.terminal && j.next_at <= now)
-                    })
-                    .map(str::to_owned)
-                    .collect::<Vec<_>>()
-            };
-            for resource in due {
-                refresh(app.clone(), shared.clone(), client.clone(), resource, false);
-            }
+            refresh_due(app.clone(), shared.clone(), client.clone());
             tokio::time::sleep(std::time::Duration::from_secs(5)).await;
         }
     });
+}
+pub fn refresh_due(app: AppHandle, shared: Shared, client: reqwest::Client) {
+    let requests = {
+        let mut state = shared.lock().unwrap();
+        let now = Utc::now().timestamp();
+        state
+            .due_resources(now)
+            .into_iter()
+            .filter_map(|resource| state.admit(resource, false, now))
+            .collect()
+    };
+    dispatch_requests(app, shared, client, requests);
 }
 pub fn refresh(
     app: AppHandle,
@@ -501,43 +530,81 @@ pub fn refresh_all(app: AppHandle, shared: Shared, client: reqwest::Client) -> R
         let requests = state.admit_batch(Utc::now().timestamp());
         (requests, state.refresh_batch.clone())
     };
-    for request in requests {
-        spawn_request(app.clone(), shared.clone(), client.clone(), request);
-    }
+    dispatch_requests(app.clone(), shared.clone(), client, requests);
     let _ = app.emit("snapshot_updated", ());
     batch
 }
 fn spawn_request(app: AppHandle, shared: Shared, client: reqwest::Client, request: Request) {
+    spawn_group(app, shared, client, vec![request]);
+}
+fn request_groups(requests: Vec<Request>) -> Vec<Vec<Request>> {
+    let (home, other): (Vec<_>, Vec<_>) = requests
+        .into_iter()
+        .partition(|request| matches!(request.resource.as_str(), "fab_market" | "fab_network"));
+    let mut groups: Vec<_> = other.into_iter().map(|request| vec![request]).collect();
+    if !home.is_empty() {
+        groups.push(home);
+    }
+    groups
+}
+fn dispatch_requests(
+    app: AppHandle,
+    shared: Shared,
+    client: reqwest::Client,
+    requests: Vec<Request>,
+) {
+    for group in request_groups(requests) {
+        spawn_group(app.clone(), shared.clone(), client.clone(), group);
+    }
+}
+fn spawn_group(app: AppHandle, shared: Shared, client: reqwest::Client, requests: Vec<Request>) {
     let _ = app.emit("snapshot_updated", ());
     tauri::async_runtime::spawn(async move {
         // A process-wide semaphore limits all overlapping resource requests.
         static LIMIT: tokio::sync::Semaphore = tokio::sync::Semaphore::const_new(2);
         let _permit = LIMIT.acquire().await;
-        let cancelled = {
+        let requests = {
             let mut state = shared.lock().unwrap();
-            if state.request_is_current(&request) {
-                false
-            } else {
-                state.cancel_request(&request);
-                true
-            }
+            requests
+                .into_iter()
+                .filter(|request| {
+                    if state.request_is_current(request) {
+                        true
+                    } else {
+                        state.cancel_request(request);
+                        false
+                    }
+                })
+                .collect::<Vec<_>>()
         };
-        if cancelled {
+        if requests.is_empty() {
             let _ = app.emit("snapshot_updated", ());
             return;
         }
-        let result = provider::fetch(&client, &request.resource, request.wallet.as_deref()).await;
-        let notification = {
-            let mut state = shared.lock().unwrap();
-            state.complete(&request, result, Utc::now().timestamp())
+        let home = if requests.len() == 2 {
+            Some(provider::fetch_fab_home(&client).await)
+        } else {
+            None
         };
-        if let Some(body) = notification {
-            let _ = app
-                .notification()
-                .builder()
-                .title("TapeOut Live")
-                .body(body)
-                .show();
+        for request in requests {
+            let result = if let Some(home) = &home {
+                home.clone()
+                    .and_then(|input| provider::normalize_fab_home(&request.resource, input))
+            } else {
+                provider::fetch(&client, &request.resource, request.wallet.as_deref()).await
+            };
+            let notification = {
+                let mut state = shared.lock().unwrap();
+                state.complete(&request, result, Utc::now().timestamp())
+            };
+            if let Some(body) = notification {
+                let _ = app
+                    .notification()
+                    .builder()
+                    .title("TapeOut Live")
+                    .body(body)
+                    .show();
+            }
         }
         let _ = app.emit("snapshot_updated", ());
     });
@@ -546,6 +613,114 @@ fn spawn_request(app: AppHandle, shared: Shared, client: reqwest::Client, reques
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn wallet_switch_refreshes_after_cooldown_not_full_interval() {
+        let (_dir, mut engine) = engine();
+        engine.settings.wallet = "0x0000000000000000000000000000000000000001".into();
+        engine.last_tick = 1010;
+        engine.jobs.insert(
+            "address".into(),
+            Job {
+                last_attempt: 1000,
+                next_at: 1060,
+                ..Default::default()
+            },
+        );
+        engine.reset_wallet();
+        assert!(engine.due_resources(1010).contains(&"address".into()));
+    }
+    #[test]
+    fn normal_ticks_honor_interval_changes_busy_jobs_and_wallet_tags() {
+        let (_dir, mut engine) = engine();
+        engine.settings.wallet = "0x0000000000000000000000000000000000000001".into();
+        engine.settings.accounts = vec![crate::domain::Account {
+            address: engine.settings.wallet.clone(),
+            name: "BEM only".into(),
+            projects: vec!["bem".into()],
+        }];
+        engine.last_tick = 1119;
+        engine.jobs.insert(
+            "network".into(),
+            Job {
+                last_attempt: 1000,
+                next_at: 1900,
+                ..Default::default()
+            },
+        );
+        engine.jobs.insert(
+            "market".into(),
+            Job {
+                busy: true,
+                ..Default::default()
+            },
+        );
+        engine.set_interval(120);
+        let due = engine.due_resources(1119);
+        assert!(!due.contains(&"network".into()));
+        assert!(!due.contains(&"market".into()));
+        assert!(due.contains(&"address".into()));
+        assert!(!due.contains(&"fab_address".into()));
+        assert!(engine.due_resources(1120).contains(&"network".into()));
+    }
+    #[test]
+    fn fab_home_jobs_share_one_dispatch_group() {
+        let (_dir, mut engine) = engine();
+        let requests = engine.admit_batch(1000);
+        let groups = request_groups(requests);
+        assert_eq!(groups.len(), 3);
+        assert!(groups.iter().any(|group| group.len() == 2
+            && group
+                .iter()
+                .all(|request| request.resource.starts_with("fab_"))));
+    }
+    #[test]
+    fn network_success_uses_configured_interval() {
+        let (_dir, mut engine) = engine();
+        engine.settings.interval = 120;
+        let request = engine.admit("network".into(), true, 1000).unwrap();
+        let snapshot = Snapshot {
+            resource: "network".into(),
+            wallet: None,
+            fetched_at: 1001,
+            observed_at: None,
+            generated_at: None,
+            observed_block: None,
+            confirmed_block: None,
+            stale: false,
+            data: json!({}),
+        };
+        engine.complete(&request, Ok(snapshot), 1001);
+        assert_eq!(engine.jobs["network"].next_at, 1121);
+    }
+    #[test]
+    fn due_resources_include_both_projects_and_preserve_backoff_after_resume() {
+        let (_dir, mut engine) = engine();
+        engine.settings.interval = 120;
+        engine.last_tick = 1000;
+        engine.jobs.insert(
+            "network".into(),
+            Job {
+                last_attempt: 1000,
+                next_at: 1900,
+                ..Default::default()
+            },
+        );
+        engine.jobs.insert(
+            "fab_network".into(),
+            Job {
+                last_attempt: 1000,
+                next_at: 2000,
+                failures: 1,
+                ..Default::default()
+            },
+        );
+        let due = engine.due_resources(1300);
+        assert!(due.contains(&"network".to_owned()));
+        assert!(due.contains(&"market".to_owned()));
+        assert!(due.contains(&"fab_market".to_owned()));
+        assert!(!due.contains(&"fab_network".to_owned()));
+        assert!(!due.iter().any(|name| name.ends_with("address")));
+    }
     fn engine() -> (tempfile::TempDir, Engine) {
         let dir = tempfile::tempdir().unwrap();
         let engine = Engine::new(Store::open(&dir.path().join("cache.sqlite")).unwrap()).unwrap();

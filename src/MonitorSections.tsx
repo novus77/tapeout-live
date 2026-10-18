@@ -34,19 +34,25 @@ export function NetworkSection({ data }: { data: Dashboard }) {
       <div className="section-title">
         <h2 id="network-title">{t("network")}</h2>
         <SnapshotTime
-          snapshot={data.market}
+          snapshot={data.network}
+          job={data.jobs.network}
           language={language}
           interval={interval}
         />
       </div>
       <div className="metric-grid compact">
-        <Metric title={t("bemPrice")} value={market.bem_usd} unit="USD" />
+        <Metric
+          title={t("bemPrice")}
+          value={market.bem_usd}
+          unit="USD"
+          detail={snapshotDetail(data.market, language, interval)}
+        />
         <Metric
           title={t("networkPower")}
           value={network.total}
           unit="H"
           digits={0}
-          detail={snapshotDetail(data.network, language, 900)}
+          detail={snapshotDetail(data.network, language, interval)}
         />
       </div>
       <div className="network-meta">
@@ -159,6 +165,7 @@ export function WalletSection({
             </button>
             <SnapshotTime
               snapshot={data.address}
+              job={data.jobs.address}
               language={language}
               interval={data.settings.interval}
             />

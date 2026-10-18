@@ -38,6 +38,29 @@ afterEach(() => {
 });
 const first = "0x0000000000000000000000000000000000000001",
   second = "0x0000000000000000000000000000000000000002";
+it("does not start a queued dashboard read after unmount", async () => {
+  setup();
+  let release!: (value: unknown) => void;
+  mock.command.mockImplementation((name: string) =>
+    name === "get_dashboard"
+      ? new Promise((resolve) => {
+          release = resolve;
+        })
+      : Promise.resolve(),
+  );
+  const hook = renderHook(() => useMonitor());
+  await act(async () => {
+    await Promise.resolve();
+  });
+  mock.updated?.();
+  hook.unmount();
+  await act(async () => {
+    release(structuredClone(mock.dashboard));
+  });
+  expect(
+    mock.command.mock.calls.filter(([name]) => name === "get_dashboard"),
+  ).toHaveLength(1);
+});
 it("uses compact typography for long metrics without truncating values", () => {
   const { container } = render(
     <Metric title="Network power" value="297645312" unit="H" digits={0} />,

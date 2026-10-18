@@ -3,7 +3,7 @@ use reqwest::{redirect::Policy, Client, StatusCode};
 use std::time::Duration;
 
 pub const ORIGIN: &str = "https://tapeoutscan.io";
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct FetchError {
     pub message: String,
     pub retry_after: Option<u64>,
@@ -145,9 +145,37 @@ pub async fn fetch(
     })
 }
 
+pub async fn fetch_fab_home(client: &Client) -> Result<serde_json::Value, FetchError> {
+    fetch_json(client, "fab_network", None).await
+}
+pub fn normalize_fab_home(
+    resource: &str,
+    input: serde_json::Value,
+) -> Result<Snapshot, FetchError> {
+    normalize(resource, input, None).map_err(|message| FetchError {
+        message,
+        retry_after: None,
+        terminal: true,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn shared_home_keeps_market_and_network_observations_independent() {
+        let input = serde_json::json!({"data": {
+            "status":{"stale":true,"active":{"time":1700000000,"token":{"decimals":8},"pool":{"totalVerifWeight":"9007199254740993","totalUnverWeight":"1"}}},
+            "finance":{"time":1700000100,"usdtQuoteTime":1700000050,"stale":false,"usdtStale":false,"priceUsdt":"0.12345678"}
+        }});
+        let market = normalize_fab_home("fab_market", input.clone()).unwrap();
+        let network = normalize_fab_home("fab_network", input).unwrap();
+        assert!(!market.stale);
+        assert!(network.stale);
+        assert_ne!(market.observed_at, network.observed_at);
+        assert_eq!(market.data["market"]["token_price"], "0.12345678");
+        assert_eq!(network.data["hashrate"]["total"], "9007199254740994");
+    }
 
     #[tokio::test]
     #[ignore = "Requires public TapeOutScan access"]

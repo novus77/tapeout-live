@@ -16,8 +16,9 @@ export function FabNetwork({ data }: { data: Dashboard }) {
         <h2 id="network-title">{t("network")}</h2>
         <SnapshotTime
           snapshot={data.network}
+          job={data.jobs.network}
           language={language}
-          interval={900}
+          interval={interval}
         />
       </div>
       <div className="metric-grid compact">
