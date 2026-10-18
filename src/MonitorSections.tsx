@@ -21,6 +21,7 @@ import { Icon } from "./Icons";
 import { AccountSelector } from "./AccountSelector";
 import { MinerSection } from "./MinerSection";
 import { snapshotDetail } from "./SnapshotTime";
+import { NetworkTrend } from "./NetworkTrend";
 export function NetworkSection({ data }: { data: Dashboard }) {
   const { language, interval } = data.settings,
     t = translator(language),
@@ -66,6 +67,7 @@ export function NetworkSection({ data }: { data: Dashboard }) {
           {t("emission")} <b>{formatMetric(market.daily_emission, 0)}</b> BEM
         </span>
       </div>
+      <NetworkTrend data={data} />
     </section>
   );
 }

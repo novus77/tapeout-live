@@ -51,6 +51,14 @@ function Preview() {
       verified_weight: "287370522",
       unverified_weight: "15876102",
       miner_count: "5365",
+      networkHistory: Array.from({ length: 169 }, (_, i) => ({
+        time: Math.floor(Date.now() / 1000) - (168 - i) * 3600,
+        value: String(
+          (fab ? 298000000 : 1550000) +
+            i * (fab ? 30000 : 400) +
+            Math.round(Math.sin(i / 8) * (fab ? 350000 : 5000)),
+        ),
+      })),
     }),
     market: snapshot(fab ? "fab_market" : "market", {
       market: {

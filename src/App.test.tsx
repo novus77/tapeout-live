@@ -90,6 +90,26 @@ function setup() {
     },
   );
 }
+it.each(["bem", "fab"] as const)(
+  "ships %s network trends without deferred NFT controls",
+  async (project) => {
+    setup();
+    (mock.dashboard as Dashboard).settings.project = project;
+    render(<App />);
+    await screen.findByRole("heading", { name: "我的矿机" });
+    expect(screen.queryByRole("button", { name: "NFT" })).toBeNull();
+    expect(screen.getByRole("button", { name: "BEM" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "FAB" })).toBeTruthy();
+    expect(screen.getByText("全网算力走势")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "24h" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "7d" })).toBeTruthy();
+    expect(
+      mock.command.mock.calls.some(
+        ([name]) => name === "get_nft_portfolio" || name === "open_nft_market",
+      ),
+    ).toBe(false);
+  },
+);
 it("renders network above the selected wallet without tabs or external controls", async () => {
   setup();
   const { container } = render(<App />);

@@ -1,4 +1,8 @@
 export const en = {
+  networkTrend: "Network power trend",
+  noTrend: "No history available",
+  collapseTrend: "Collapse",
+  expandTrend: "Expand",
   minerDetails: "Miner details",
   minerSorting: "Miner sorting",
   sortPower: "Power ↓",
@@ -162,6 +166,10 @@ export const en = {
 export type Message = keyof typeof en;
 export type Language = "zh" | "en";
 export const zh: Record<Message, string> = {
+  networkTrend: "全网算力走势",
+  noTrend: "暂无历史数据",
+  collapseTrend: "收起",
+  expandTrend: "展开",
   minerDetails: "矿机明细",
   minerSorting: "矿机排序",
   sortPower: "算力降序",

@@ -273,7 +273,7 @@ pub fn normalize(resource: &str, input: Value, wallet: Option<&str>) -> Result<S
         }
         "network" => {
             nonnegative(&data["hashrate"], "total", true)?;
-            json!({"hashrate":project(&data["hashrate"], &["total", "snapshot", "basis"]), "miningAddresses":project(&data["miningAddresses"], &["current", "definition"])})
+            json!({"hashrate":project(&data["hashrate"], &["total", "snapshot", "basis"]), "miningAddresses":project(&data["miningAddresses"], &["current", "definition"]),"networkHistory":crate::network_history::normalize_history(&data["hashrate"]["history"], Utc::now().timestamp())})
         }
         _ => return Err("Unsupported resource.".into()),
     };
