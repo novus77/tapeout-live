@@ -21,6 +21,7 @@ import { Icon } from "./Icons";
 import { AccountSelector } from "./AccountSelector";
 import { MinerSection } from "./MinerSection";
 import { snapshotDetail } from "./SnapshotTime";
+import { NetworkTrend } from "./NetworkTrend";
 export function NetworkSection({ data }: { data: Dashboard }) {
   const { language, interval } = data.settings,
     t = translator(language),
@@ -33,19 +34,25 @@ export function NetworkSection({ data }: { data: Dashboard }) {
       <div className="section-title">
         <h2 id="network-title">{t("network")}</h2>
         <SnapshotTime
-          snapshot={data.market}
+          snapshot={data.network}
+          job={data.jobs.network}
           language={language}
           interval={interval}
         />
       </div>
       <div className="metric-grid compact">
-        <Metric title={t("bemPrice")} value={market.bem_usd} unit="USD" />
+        <Metric
+          title={t("bemPrice")}
+          value={market.bem_usd}
+          unit="USD"
+          detail={snapshotDetail(data.market, language, interval)}
+        />
         <Metric
           title={t("networkPower")}
           value={network.total}
           unit="H"
           digits={0}
-          detail={snapshotDetail(data.network, language, 900)}
+          detail={snapshotDetail(data.network, language, interval)}
         />
       </div>
       <div className="network-meta">
@@ -66,6 +73,7 @@ export function NetworkSection({ data }: { data: Dashboard }) {
           {t("emission")} <b>{formatMetric(market.daily_emission, 0)}</b> BEM
         </span>
       </div>
+      <NetworkTrend data={data} />
     </section>
   );
 }
@@ -157,6 +165,7 @@ export function WalletSection({
             </button>
             <SnapshotTime
               snapshot={data.address}
+              job={data.jobs.address}
               language={language}
               interval={data.settings.interval}
             />

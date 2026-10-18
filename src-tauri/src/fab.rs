@@ -140,7 +140,7 @@ pub fn normalize(resource: &str, input: Value, wallet: Option<&str>) -> Result<S
             let total = parse(&verified)?
                 .checked_add(parse(&unverified)?)
                 .ok_or("FAB pool weight overflow.")?;
-            json!({"hashrate":{"total":total.to_string()},"verified_weight":verified,"unverified_weight":unverified,"miner_count":number(&pool["minerCount"])?,"effectiveWeights":pool["effectiveWeights"]})
+            json!({"hashrate":{"total":total.to_string()},"verified_weight":verified,"unverified_weight":unverified,"miner_count":number(&pool["minerCount"])?,"effectiveWeights":pool["effectiveWeights"],"networkHistory":crate::network_history::normalize_history(&data["charts"]["hashrate"]["history"], Utc::now().timestamp())})
         }
         _ => return Err("Unsupported FAB resource.".into()),
     };

@@ -131,14 +131,14 @@ code {
   flex-shrink: 0;
 }
 .monitor-dashboard .section-title {
-  margin-bottom: 5px;
+  margin-bottom: 3px;
 }
 .monitor-dashboard h2 {
   font-size: 12px;
 }
 .monitor-dashboard .metric {
   min-height: 0;
-  padding: 6px 11px;
+  padding: 4px 11px;
   border-bottom: 0;
 }
 .monitor-dashboard .network-section .metric-number {
@@ -158,8 +158,8 @@ code {
   white-space: nowrap;
 }
 .monitor-dashboard .wallet-section {
-  margin-top: 7px;
-  padding-top: 8px;
+  margin-top: 5px;
+  padding-top: 6px;
 }
 .monitor-dashboard .wallet-section .metric-grid {
   border: 0;
@@ -178,7 +178,7 @@ code {
   padding-left: 14px;
 }
 .monitor-dashboard .wallet-section .metric-number {
-  font-size: 26px;
+  font-size: 24px;
 }
 .monitor-dashboard .wallet-section .metric-number.long-value {
   font-size: 21px;
@@ -201,12 +201,20 @@ code {
 .monitor-dashboard .address-row code {
   font-size: 9px;
 }
+.monitor-dashboard .address-row .icon-button {
+  height: 14px;
+}
+.monitor-dashboard .account-trigger {
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
 .wallet-counts {
   display: flex;
   gap: 12px;
   font-size: 9px;
   color: var(--muted);
   margin-top: 5px;
+  line-height: 1.2;
 }
 .wallet-counts b {
   color: var(--ink);
@@ -217,8 +225,8 @@ code {
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  margin-top: 8px;
-  padding-top: 8px;
+  margin-top: 6px;
+  padding-top: 6px;
   border-top: 1px solid var(--line);
 }
 .miner-section > .section-title,
@@ -242,7 +250,7 @@ code {
 .miner-search {
   padding: 3px 8px;
   font-size: 10px;
-  height: 25px;
+  height: 23px;
   margin-bottom: 3px;
 }
 .miner-scroll {
@@ -1138,6 +1146,77 @@ h3 {
 }
 .preview {
   font-size: 10px;
+}
+.trend-section {
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+.trend-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--muted);
+  font-size: 9px;
+  gap: 6px;
+}
+.trend-heading button {
+  border: 0;
+  background: transparent;
+  font-size: 9px;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+.trend-heading button[aria-pressed="true"] {
+  color: var(--accent);
+  background: var(--tint);
+}
+.trend-plot {
+  position: relative;
+}
+.trend-plot svg {
+  display: block;
+  width: 100%;
+  height: 56px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.trend-plot svg path {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.6;
+}
+.trend-plot svg circle {
+  fill: var(--accent);
+}
+.trend-plot svg line {
+  stroke: var(--line);
+}
+.trend-plot svg text {
+  fill: var(--muted);
+  font-size: 8px;
+}
+.trend-plot svg .trend-guide {
+  stroke: var(--muted);
+  stroke-dasharray: 2 3;
+}
+.trend-tooltip {
+  position: absolute;
+  top: 0;
+  z-index: 5;
+  background: var(--ink);
+  color: var(--panel);
+  font-size: 9px;
+  padding: 4px 7px;
+  border-radius: 4px;
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.trend-empty {
+  color: var(--muted);
+  font-size: 10px;
+  text-align: center;
+  padding: 10px 0;
 }
 @media (prefers-reduced-motion: reduce) {
   * {

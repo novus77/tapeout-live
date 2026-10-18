@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { reloadQueue } from "./reloadQueue";
 import {
   command,
   defaults,
@@ -26,7 +27,9 @@ export function useMonitor() {
   const [ready, setReady] = useState(false);
   const selection = useRef(0);
   const pending = useRef(false);
-  const load = useCallback(async () => {
+  const mounted = useRef(true);
+  const readDashboard = useCallback(async () => {
+    if (!mounted.current) return;
     const ticket = ++revision.current;
     try {
       const next = await command<Dashboard>("get_dashboard");
@@ -46,7 +49,9 @@ export function useMonitor() {
       if (ticket === revision.current) setReady(true);
     }
   }, []);
+  const load = useMemo(() => reloadQueue(readDashboard), [readDashboard]);
   useEffect(() => {
+    mounted.current = true;
     void load();
     let alive = true;
     let unlisten: (() => void) | undefined;
@@ -55,6 +60,7 @@ export function useMonitor() {
       else fn();
     });
     return () => {
+      mounted.current = false;
       alive = false;
       revision.current++;
       unlisten?.();

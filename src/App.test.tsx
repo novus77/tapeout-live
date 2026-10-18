@@ -38,6 +38,29 @@ afterEach(() => {
 });
 const first = "0x0000000000000000000000000000000000000001",
   second = "0x0000000000000000000000000000000000000002";
+it("does not start a queued dashboard read after unmount", async () => {
+  setup();
+  let release!: (value: unknown) => void;
+  mock.command.mockImplementation((name: string) =>
+    name === "get_dashboard"
+      ? new Promise((resolve) => {
+          release = resolve;
+        })
+      : Promise.resolve(),
+  );
+  const hook = renderHook(() => useMonitor());
+  await act(async () => {
+    await Promise.resolve();
+  });
+  mock.updated?.();
+  hook.unmount();
+  await act(async () => {
+    release(structuredClone(mock.dashboard));
+  });
+  expect(
+    mock.command.mock.calls.filter(([name]) => name === "get_dashboard"),
+  ).toHaveLength(1);
+});
 it("uses compact typography for long metrics without truncating values", () => {
   const { container } = render(
     <Metric title="Network power" value="297645312" unit="H" digits={0} />,
@@ -90,6 +113,26 @@ function setup() {
     },
   );
 }
+it.each(["bem", "fab"] as const)(
+  "ships %s network trends without deferred NFT controls",
+  async (project) => {
+    setup();
+    (mock.dashboard as Dashboard).settings.project = project;
+    render(<App />);
+    await screen.findByRole("heading", { name: "我的矿机" });
+    expect(screen.queryByRole("button", { name: "NFT" })).toBeNull();
+    expect(screen.getByRole("button", { name: "BEM" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "FAB" })).toBeTruthy();
+    expect(screen.getByText("全网算力走势")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "24h" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "7d" })).toBeTruthy();
+    expect(
+      mock.command.mock.calls.some(
+        ([name]) => name === "get_nft_portfolio" || name === "open_nft_market",
+      ),
+    ).toBe(false);
+  },
+);
 it("renders network above the selected wallet without tabs or external controls", async () => {
   setup();
   const { container } = render(<App />);
