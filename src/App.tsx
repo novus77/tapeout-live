@@ -1,8 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { command, native } from "./bridge";
+import { accountProjects, command, native } from "./bridge";
 import { translator } from "./i18n";
 import { useMonitor } from "./useMonitor";
-import { NetworkSection, WalletSection } from "./MonitorSections";
+import {
+  CircuitSection,
+  NetworkSection,
+  WalletSection,
+} from "./MonitorSections";
+import { visibleMinerSnapshot } from "./minerData";
 import { SettingsPanel } from "./SettingsPanel";
 import { useAppearance } from "./appearance";
 import { BrandMark, Icon } from "./Icons";
@@ -24,6 +29,12 @@ export default function App() {
   const busy = admitting || data.refreshBatch?.busy;
   const [settingsOpen, setSettingsOpen] = useState(false),
     theme = useAppearance(data.settings, ready);
+  const walletSnapshot = visibleMinerSnapshot(data);
+  const hasAccount = data.settings.accounts.some(
+    (account) =>
+      account.address === data.settings.wallet &&
+      accountProjects(account).includes(data.settings.project),
+  );
   useEffect(() => {
     document.documentElement.lang =
       data.settings.language === "zh" ? "zh-CN" : "en";
@@ -114,7 +125,7 @@ export default function App() {
           </button>
         </div>
       </header>
-      <main>
+      <main className={settingsOpen ? "settings-main" : "dashboard-main"}>
         {!native && <div className="notice preview">{t("preview")}</div>}
         {error && (
           <p className="notice error" role="alert">
@@ -130,16 +141,23 @@ export default function App() {
             effectiveTheme={theme}
           />
         ) : (
-          <>
+          <div className="monitor-dashboard">
             <NetworkSection data={data} />
             <WalletSection
-              data={data}
+              data={{ ...data, address: walletSnapshot }}
               select={select}
               onError={setError}
               disabled={switching}
               openSettings={() => setSettingsOpen(true)}
             />
-          </>
+            {hasAccount && (
+              <CircuitSection
+                key={`${data.settings.project}:${data.settings.wallet}`}
+                snapshot={walletSnapshot}
+                language={data.settings.language}
+              />
+            )}
+          </div>
         )}
       </main>
     </div>

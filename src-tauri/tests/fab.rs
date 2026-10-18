@@ -14,6 +14,23 @@ fn projects_default_to_bem_and_reject_unknown_names() {
     assert!(canonical_settings(settings).is_err());
 }
 #[test]
+fn miner_weights_preserve_precision_and_daily_requires_mining_availability() {
+    let mut input = address();
+    input["data"]["rows"][0]["verifWeight"] = json!("9007199254740993");
+    input["data"]["rows"][0]["unverWeight"] = json!("0");
+    let result = normalize("fab_address", input.clone(), Some(WALLET)).unwrap();
+    assert_eq!(
+        result.data["circuits"][0]["verified_weight"],
+        "9007199254740993"
+    );
+    assert_eq!(result.data["circuits"][0]["unverified_weight"], "0");
+    input["data"]["availability"]["miningStarted"] = json!(false);
+    let result = normalize("fab_address", input.clone(), Some(WALLET)).unwrap();
+    assert!(result.data["circuits"][0]["estimated_daily"].is_null());
+    input["data"]["rows"][0]["verifWeight"] = json!("-1");
+    assert!(normalize("fab_address", input, Some(WALLET)).is_err());
+}
+#[test]
 fn fab_address_preserves_precision_source_age_and_partial_collection() {
     let result = normalize("fab_address", address(), Some(WALLET)).unwrap();
     assert_eq!(result.data["summary"]["total_hashrate"], "9007199254740993");

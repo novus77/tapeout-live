@@ -98,6 +98,8 @@ it("renders network above the selected wallet without tabs or external controls"
     .getAllByRole("heading", { level: 2 })
     .map((h) => h.textContent);
   expect(headings.slice(0, 2)).toEqual(["全网概览", "我的矿机"]);
+  expect(headings[2]).toContain("矿机明细");
+  expect(container.querySelector(".miner-scroll")).toBeTruthy();
   expect(container.querySelector("#network-title svg")).toBeNull();
   expect(container.querySelector("#overview-title svg")).toBeNull();
   expect(container.querySelector(".metric-label svg")).toBeNull();
@@ -401,6 +403,7 @@ it.each(["bem", "fab"] as const)(
     setup();
     const data = mock.dashboard as Dashboard;
     data.settings.project = project;
+    data.address!.resource = project === "fab" ? "fab_address" : "address";
     data.jobs = {
       address: {
         busy: true,

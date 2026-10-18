@@ -98,7 +98,7 @@ pub fn normalize(resource: &str, input: Value, wallet: Option<&str>) -> Result<S
                     .and_then(|ps| ps.iter().find(|p| p["cpu"] == r["cpu"]))
                     .and_then(|p| p["name"].as_str())
                     .unwrap_or("FabX");
-                circuits.push(json!({"processor":processor,"processor_address":r["cpu"],"circuit_id":r["id"].to_string(),"current_owner":r["owner"],"task_id":r["task"],"task_name":r["taskName"],"current_hashrate":number(&r["weight"])?,"estimated_daily":number(&r["daily"])?,"is_champion":if r["optimal"] == true {1}else{0},"status":status}));
+                circuits.push(json!({"processor":processor,"processor_address":r["cpu"],"circuit_id":r["id"].to_string(),"current_owner":r["owner"],"task_id":r["task"],"task_name":r["taskName"],"current_hashrate":number(&r["weight"])?,"verified_weight":number(&r["verifWeight"])?,"unverified_weight":number(&r["unverWeight"])?,"estimated_daily":if data["availability"]["miningStarted"] == true {number(&r["daily"])?} else {Value::Null},"is_champion":if r["optimal"] == true {1}else{0},"status":status}));
             }
             let count = data["circuitCount"]
                 .as_u64()

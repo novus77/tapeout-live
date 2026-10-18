@@ -108,6 +108,269 @@ code {
   overflow: hidden;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
+.dashboard-main {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 8px 16px 9px;
+}
+.dashboard-main > .notice {
+  flex-shrink: 0;
+  max-height: 44px;
+  overflow: auto;
+  font-size: 9px;
+}
+.monitor-dashboard {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.monitor-dashboard > .network-section,
+.monitor-dashboard > .wallet-section {
+  flex-shrink: 0;
+}
+.monitor-dashboard .section-title {
+  margin-bottom: 5px;
+}
+.monitor-dashboard h2 {
+  font-size: 12px;
+}
+.monitor-dashboard .metric {
+  min-height: 0;
+  padding: 6px 11px;
+  border-bottom: 0;
+}
+.monitor-dashboard .network-section .metric-number {
+  font-size: 20px;
+}
+.monitor-dashboard .network-section .metric-number.long-value {
+  font-size: 17px;
+}
+.monitor-dashboard .metric-label {
+  font-size: 10px;
+  margin-bottom: 2px;
+}
+.monitor-dashboard .network-meta {
+  font-size: 9px;
+  gap: 5px;
+  margin-top: 5px;
+  white-space: nowrap;
+}
+.monitor-dashboard .wallet-section {
+  margin-top: 7px;
+  padding-top: 8px;
+}
+.monitor-dashboard .wallet-section .metric-grid {
+  border: 0;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  margin-top: 5px;
+}
+.monitor-dashboard .wallet-section .metric {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+}
+.monitor-dashboard .wallet-section .metric + .metric {
+  border-left: 1px solid var(--line);
+  padding-left: 14px;
+}
+.monitor-dashboard .wallet-section .metric-number {
+  font-size: 26px;
+}
+.monitor-dashboard .wallet-section .metric-number.long-value {
+  font-size: 21px;
+}
+.monitor-dashboard .balance-row {
+  margin-top: 5px;
+  padding-top: 0;
+  font-size: 9px;
+}
+.monitor-dashboard .balance-row > span {
+  font-size: 9px;
+}
+.monitor-dashboard .balance-row b {
+  font-size: 10px;
+  font-weight: 500;
+}
+.monitor-dashboard .address-row {
+  margin-bottom: 4px;
+}
+.monitor-dashboard .address-row code {
+  font-size: 9px;
+}
+.wallet-counts {
+  display: flex;
+  gap: 12px;
+  font-size: 9px;
+  color: var(--muted);
+  margin-top: 5px;
+}
+.wallet-counts b {
+  color: var(--ink);
+  font-weight: 500;
+}
+.miner-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+.miner-section > .section-title,
+.miner-search {
+  flex-shrink: 0;
+}
+.miner-coverage {
+  font-size: 9px;
+  font-weight: 400;
+  color: var(--muted);
+  margin-left: 4px;
+}
+.miner-section select {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-size: 9px;
+  max-width: 105px;
+  color: var(--muted);
+}
+.miner-search {
+  padding: 3px 8px;
+  font-size: 10px;
+  height: 25px;
+  margin-bottom: 3px;
+}
+.miner-scroll {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+.miner-record {
+  border-bottom: 1px solid var(--line);
+}
+.miner-record summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 7px 1px;
+}
+.miner-record summary::-webkit-details-marker {
+  display: none;
+}
+.miner-line,
+.miner-subline,
+.miner-values {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.miner-line strong {
+  font-size: 11px;
+  font-weight: 600;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.miner-line strong:before {
+  content: "›";
+  display: inline-block;
+  margin-right: 5px;
+  color: var(--muted);
+}
+.miner-record[open] .miner-line strong:before {
+  transform: rotate(90deg);
+}
+.miner-state {
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 9px;
+  flex-shrink: 0;
+}
+.miner-state.active {
+  color: var(--accent);
+  background: var(--tint);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+.miner-subline {
+  font-size: 9px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.miner-subline > span:first-child {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.miner-subline > span:last-child {
+  flex-shrink: 0;
+}
+.miner-values {
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.miner-values b {
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.miner-values small {
+  font-size: 9px;
+  font-weight: 400;
+  color: var(--muted);
+  margin-left: 3px;
+  white-space: nowrap;
+}
+.miner-daily {
+  text-align: right;
+  color: var(--accent);
+}
+.miner-expanded {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 7px 9px;
+  background: var(--surface);
+  margin: 0 0 7px;
+  font-size: 9px;
+  color: var(--muted);
+}
+.miner-expanded > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 3px 0;
+}
+.miner-expanded dt {
+  flex-shrink: 0;
+}
+.miner-expanded dd {
+  margin: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+}
+.miner-expanded code {
+  font-size: 9px;
+}
+.miner-empty {
+  color: var(--muted);
+  text-align: center;
+  font-size: 11px;
+  padding: 18px 8px;
+}
+.monitor-dashboard .empty {
+  padding: 14px 10px;
+}
 :root[data-material="glass"] .app-shell {
   -webkit-backdrop-filter: blur(28px) saturate(135%);
   backdrop-filter: blur(28px) saturate(135%);
@@ -116,7 +379,7 @@ code {
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 52px;
+  height: 44px;
   flex-shrink: 0;
   padding: 7px 16px;
   border-bottom: 1px solid var(--line);

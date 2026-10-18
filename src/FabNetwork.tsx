@@ -33,24 +33,16 @@ export function FabNetwork({ data }: { data: Dashboard }) {
           unit="H"
           digits={0}
         />
-        <Metric
-          title={t("verifiedWeight")}
-          value={network.verified_weight}
-          digits={0}
-        />
-        <Metric
-          title={t("emission")}
-          value={market.daily_emission}
-          unit="FAB"
-        />
       </div>
       <div className="network-meta">
         <span>
-          {t("unverified")} {t("weight")}{" "}
-          <b>{formatMetric(network.unverified_weight, 0)}</b>
+          {t("verified")} <b>{formatMetric(network.verified_weight, 0)}</b>
         </span>
         <span>
           {t("snapshotCount")} <b>{formatMetric(network.miner_count, 0)}</b>
+        </span>
+        <span>
+          {t("emission")} <b>{formatMetric(market.daily_emission, 0)}</b> FAB
         </span>
       </div>
     </section>
