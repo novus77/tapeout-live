@@ -13,12 +13,14 @@ import {
   type Language,
   type Message,
 } from "./i18n";
-import { circuitTotals, formatMetric, freshness, type Row } from "./metrics";
+import { circuitTotals, formatMetric, freshness } from "./metrics";
 import { Metric } from "./components";
 import { FabNetwork } from "./FabNetwork";
 import { SnapshotTime } from "./SnapshotTime";
 import { Icon } from "./Icons";
 import { AccountSelector } from "./AccountSelector";
+import { MinerSection } from "./MinerSection";
+import { snapshotDetail } from "./SnapshotTime";
 export function NetworkSection({ data }: { data: Dashboard }) {
   const { language, interval } = data.settings,
     t = translator(language),
@@ -38,18 +40,17 @@ export function NetworkSection({ data }: { data: Dashboard }) {
       </div>
       <div className="metric-grid compact">
         <Metric title={t("bemPrice")} value={market.bem_usd} unit="USD" />
-        <Metric title={t("networkPower")} value={network.total} unit="H" />
-        <Metric title={t("verifiedWeight")} value={market.verified_weight} />
         <Metric
-          title={t("emission")}
-          value={market.daily_emission}
-          unit="BEM"
+          title={t("networkPower")}
+          value={network.total}
+          unit="H"
+          digits={0}
+          detail={snapshotDetail(data.network, language, 900)}
         />
       </div>
       <div className="network-meta">
         <span>
-          {t("unverified")} {t("weight")}{" "}
-          <b>{formatMetric(market.unverified_weight, 0)}</b>
+          {t("verified")} <b>{formatMetric(market.verified_weight, 0)}</b>
         </span>
         <span>
           {t("snapshotCount")}{" "}
@@ -61,14 +62,9 @@ export function NetworkSection({ data }: { data: Dashboard }) {
               : "—"}
           </b>
         </span>
-      </div>
-      <div className="source-note">
-        {t("networkPower")} ·{" "}
-        <SnapshotTime
-          snapshot={data.network}
-          language={language}
-          interval={900}
-        />
+        <span>
+          {t("emission")} <b>{formatMetric(market.daily_emission, 0)}</b> BEM
+        </span>
       </div>
     </section>
   );
@@ -184,11 +180,15 @@ export function WalletSection({
               note={t("estimate")}
               accent
             />
-            <Metric title={t("miners")} value={summary.miner_count} />
-            <Metric
-              title={t("optimal")}
-              value={fab ? summary.optimal : totals.optimal}
-            />
+          </div>
+          <div className="wallet-counts">
+            <span>
+              {t("miners")} <b>{formatMetric(summary.miner_count, 0)}</b>
+            </span>
+            <span>
+              {t("optimal")}{" "}
+              <b>{formatMetric(fab ? summary.optimal : totals.optimal, 0)}</b>
+            </span>
           </div>
           <div className="balance-row">
             <span title={tokenDetail} aria-description={tokenDetail}>
@@ -212,87 +212,12 @@ export function CircuitSection({
   snapshot: Snapshot | null;
   language: Language;
 }) {
-  const [query, setQuery] = useState(""),
-    t = translator(language);
-  if (!snapshot) return null;
-  const collection = rows(snapshot.data.circuits)
-    .filter((r) =>
-      `${r.task_name} ${r.task_id} ${r.circuit_id} ${r.processor}`
-        .toLowerCase()
-        .includes(query.toLowerCase()),
-    )
-    .sort((a, b) => Number(b.current_hashrate) - Number(a.current_hashrate));
   return (
-    <section className="section">
-      <div className="section-title">
-        <h2>{t("circuits")}</h2>
-        <span className="muted">
-          {collection.length} {t("groups")}
-        </span>
-      </div>
-      {snapshot.data.circuitsComplete === false && (
-        <p className="helper">
-          {t("partialCircuits")}: {rows(snapshot.data.circuits).length} /{" "}
-          {formatMetric(snapshot.data.circuitCount, 0)}
-        </p>
-      )}
-      <input
-        className="circuit-search"
-        aria-label={t("search")}
-        placeholder={t("search")}
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
-      {!collection.length ? (
-        <p className="helper">
-          {t(snapshot.data.pending === true ? "indexing" : "noCircuits")}
-        </p>
-      ) : (
-        collection.map((row: Row, i) => (
-          <article
-            className="circuit-row"
-            key={`${row.processor}:${row.circuit_id}:${i}`}
-          >
-            <span className="circuit-chip">
-              {snapshot.resource === "fab_address"
-                ? "F"
-                : row.processor === "tapeout"
-                  ? "T"
-                  : "B"}
-            </span>
-            <div className="circuit-info">
-              <strong title={String(row.task_name ?? "")}>
-                {taskName(row, language)}
-              </strong>
-              <span>
-                {String(row.processor ?? "—")} #{String(row.circuit_id ?? "—")}{" "}
-                ·{" "}
-                {row.status === "active"
-                  ? t("active")
-                  : row.status === "inactive"
-                    ? t("inactive")
-                    : row.status === "not_started"
-                      ? t("notStarted")
-                      : t("unknownState")}
-                {Number(row.count) > 1 ? ` · ${row.count}` : ""}
-              </span>
-            </div>
-            <div className="circuit-value">
-              <strong>{formatMetric(row.current_hashrate, 0)} H</strong>
-              <span className={row.is_champion === 1 ? "teal" : ""}>
-                {row.is_champion === 1 ? t("optimal") : t("base")}
-              </span>
-              {snapshot.resource === "fab_address" && (
-                <span>
-                  {formatMetric(row.estimated_daily, 8)} FAB/
-                  {language === "zh" ? "日" : "day"}
-                </span>
-              )}
-            </div>
-          </article>
-        ))
-      )}
-    </section>
+    <MinerSection
+      key={`${snapshot?.resource}:${snapshot?.wallet}`}
+      snapshot={snapshot}
+      language={language}
+    />
   );
 }
 export function ActivitySection({

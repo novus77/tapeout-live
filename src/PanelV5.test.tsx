@@ -243,7 +243,7 @@ it("shows FAB token holdings without relabeling BEM or BNB and keeps source rows
   expect(container.querySelector(".source-note")).toBeNull();
   expect(screen.queryByText("Asset snapshot")).toBeNull();
 });
-it("retains BEM network time and independent accessible balance observation age", () => {
+it("retains BEM network age in metric details and independent balance observation age", () => {
   const data = fixture();
   const { container } = render(
     <>
@@ -251,7 +251,10 @@ it("retains BEM network time and independent accessible balance observation age"
       <WalletSection data={data} select={vi.fn()} onError={vi.fn()} />
     </>,
   );
-  expect(container.querySelectorAll(".source-note")).toHaveLength(1);
+  expect(container.querySelectorAll(".source-note")).toHaveLength(0);
+  expect(
+    container.querySelectorAll(".metric")[1].getAttribute("aria-description"),
+  ).toContain("Source age");
   const balances = container.querySelectorAll(".balance-row > span");
   expect(balances[0].getAttribute("aria-description")).toContain(
     "Delayed data",
