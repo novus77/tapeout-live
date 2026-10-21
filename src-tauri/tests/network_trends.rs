@@ -56,7 +56,11 @@ async fn live_network_histories() {
         .timeout(std::time::Duration::from_secs(30))
         .build()
         .unwrap();
-    for (resource, path) in [("network", "/api/home"), ("fab_network", "/api/fabx/home")] {
+    // v2: network hashrate history lives on /charts, not /home.
+    for (resource, path) in [
+        ("network", "/v2/tapeout/charts"),
+        ("fab_network", "/v2/fabx/home"),
+    ] {
         let input: Value = client
             .get(format!("https://tapeoutscan.io{path}"))
             .send()

@@ -37,3 +37,5 @@ objc2-app-kit = { version = "0.3", default-features = false, features = ["NSEven
 
 [dev-dependencies]
 tempfile = "3"
+# Fixtures ship gzip-compressed (see tests/v2_contract.rs).
+flate2 = "1"

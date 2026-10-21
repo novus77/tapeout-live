@@ -13,7 +13,7 @@ import {
   type Language,
   type Message,
 } from "./i18n";
-import { circuitTotals, formatMetric, freshness } from "./metrics";
+import { circuitTotals, formatMetric, freshness, type Row } from "./metrics";
 import { Metric } from "./components";
 import { FabNetwork } from "./FabNetwork";
 import { SnapshotTime } from "./SnapshotTime";
@@ -229,6 +229,89 @@ export function CircuitSection({
     />
   );
 }
+const activityEvents: Message[] = [
+  "Start",
+  "Demoted",
+  "LeaderWin",
+  "Transfer",
+  "BEMSell",
+  "BEMBuy",
+  "BEMOut",
+  "BEMTransfer",
+  "BEMLiquidityAdd",
+  "BEMLiquidityRemove",
+  "BEMSwap",
+  "BEMBurn",
+  "BEMCollect",
+  "Commit",
+  "TapeOut",
+  "Started",
+  "TapedOut",
+];
+/** v2 token rows carry `kind`; circuit activity rows carry `event_type`. */
+export const activityEvent = (row: Row) =>
+  typeof row.event_type === "string" && row.event_type
+    ? row.event_type
+    : typeof row.kind === "string"
+      ? row.kind
+      : "";
+/**
+ * Identity keys of one on-chain event. The two sources describe the same event
+ * with different columns: token rows expose block_number + transaction_index,
+ * circuit activity rows expose block_number + log_index (several of which can
+ * share one block), and both usually carry a tx hash. Returning every key lets
+ * the merge collapse a duplicate even when the sources only overlap on one of
+ * them.
+ */
+export const activityKeys = (row: Row): string[] => {
+  const keys: string[] = [];
+  if (row.operation_id != null && String(row.operation_id) !== "")
+    keys.push(`operation:${String(row.operation_id)}`);
+  const block = Number(row.block_number);
+  if (Number.isFinite(block)) {
+    const transaction = Number(row.transaction_index);
+    if (row.transaction_index != null && Number.isFinite(transaction))
+      keys.push(`block:${block}:transaction:${transaction}`);
+    const log = Number(row.log_index);
+    if (row.log_index != null && Number.isFinite(log))
+      keys.push(`block:${block}:log:${log}`);
+  }
+  const hash = row.tx_hash;
+  if (hash != null && String(hash) !== "") {
+    const event = activityEvent(row);
+    keys.push(`transaction:${String(hash).toLowerCase()}:${event}`);
+  }
+  return keys;
+};
+/** Primary key used for React reconciliation; every row gets a stable one. */
+const activityKey = (row: Row, index: number) =>
+  activityKeys(row)[0] ?? `index:${index}`;
+const activitySource = (value: unknown) =>
+  rows(Array.isArray(value) ? value : object(value).rows);
+/**
+ * Union of circuit activity and the v2 token/trade ledger folded into one
+ * newest-first list. v2 serves token events from a separate endpoint, so a
+ * wallet's BEM sales only reappear when both sources are merged.
+ */
+export function mergedActivity(...sources: unknown[]): Row[] {
+  const seen = new Set<string>();
+  const merged: Row[] = [];
+  for (const source of sources)
+    for (const row of activitySource(source)) {
+      const keys = activityKeys(row);
+      if (keys.some((key) => seen.has(key))) continue;
+      for (const key of keys) seen.add(key);
+      merged.push(row);
+    }
+  return merged
+    .sort(
+      (a, b) =>
+        Number(b.block_number) - Number(a.block_number) ||
+        Number(b.transaction_index ?? 0) - Number(a.transaction_index ?? 0) ||
+        Number(b.log_index ?? 0) - Number(a.log_index ?? 0),
+    )
+    .slice(0, 5);
+}
 export function ActivitySection({
   snapshot,
   language,
@@ -238,63 +321,61 @@ export function ActivitySection({
 }) {
   const t = translator(language);
   if (!snapshot) return null;
-  const activity = rows(object(snapshot.data.activity).rows)
-    .slice()
-    .sort(
-      (a, b) =>
-        Number(b.block_number) - Number(a.block_number) ||
-        Number(b.transaction_index ?? 0) - Number(a.transaction_index ?? 0) ||
-        Number(b.log_index ?? 0) - Number(a.log_index ?? 0),
-    )
-    .slice(0, 5);
-  const events: Message[] = [
-    "Start",
-    "Demoted",
-    "LeaderWin",
-    "Transfer",
-    "BEMSell",
-    "BEMBuy",
-    "Commit",
-  ];
+  const activity = mergedActivity(
+    snapshot.data.activity,
+    snapshot.data.tokenActivity,
+  );
+  const unavailable = snapshot.data.activityUnavailable === true,
+    tokenUnavailable = snapshot.data.tokenActivityUnavailable === true;
   return (
     <section className="section">
       <div className="section-title">
         <h2>{t("activity")}</h2>
       </div>
-      {snapshot.data.activityUnavailable === true && (
-        <p className="helper">{t("activityUnavailable")}</p>
+      {unavailable && <p className="helper">{t("activityUnavailable")}</p>}
+      {!unavailable && tokenUnavailable && (
+        <p className="helper">{t("tokenActivityUnavailable")}</p>
       )}
       {activity.length ? (
-        activity.map((row, i) => (
-          <article className="activity-row" key={String(row.operation_id ?? i)}>
-            <span className="event-dot" />
-            <div>
-              <strong>
-                {t(
-                  events.includes(row.event_type as Message)
-                    ? (row.event_type as Message)
-                    : "unknownEvent",
-                )}
-              </strong>
-              <p>
-                {row.task_id
-                  ? taskName(row, language)
-                  : `#${formatMetric(row.block_number, 0)}`}
-              </p>
-            </div>
-            <time>
-              {row.block_time
-                ? new Date(String(row.block_time)).toLocaleTimeString(
-                    locale(language),
-                    { hour: "2-digit", minute: "2-digit" },
-                  )
-                : "—"}
-            </time>
-          </article>
-        ))
+        activity.map((row, i) => {
+          const event = activityEvent(row);
+          return (
+            <article className="activity-row" key={activityKey(row, i)}>
+              <span className="event-dot" />
+              <div>
+                <strong>
+                  {t(
+                    activityEvents.includes(event as Message)
+                      ? (event as Message)
+                      : "unknownEvent",
+                  )}
+                </strong>
+                <p>
+                  {row.task_id
+                    ? taskName(row, language)
+                    : `#${formatMetric(row.block_number, 0)}`}
+                </p>
+              </div>
+              <time>
+                {row.block_time
+                  ? new Date(String(row.block_time)).toLocaleTimeString(
+                      locale(language),
+                      { hour: "2-digit", minute: "2-digit" },
+                    )
+                  : "—"}
+              </time>
+            </article>
+          );
+        })
       ) : (
         <p className="helper">
-          {t(snapshot.data.pending === true ? "indexing" : "noActivity")}
+          {t(
+            snapshot.data.pending === true
+              ? "indexing"
+              : unavailable || tokenUnavailable
+                ? "activityUnavailable"
+                : "noActivity",
+          )}
         </p>
       )}
     </section>

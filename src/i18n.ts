@@ -167,8 +167,19 @@ export const en = {
   Transfer: "Transferred",
   BEMSell: "BEM sold",
   BEMBuy: "BEM bought",
+  BEMOut: "BEM sent out",
+  BEMTransfer: "BEM transferred",
+  BEMLiquidityAdd: "Liquidity added",
+  BEMLiquidityRemove: "Liquidity removed",
+  BEMSwap: "BEM swapped",
+  BEMBurn: "BEM burned",
+  BEMCollect: "BEM collected",
   Commit: "Committed",
+  TapeOut: "Tapeout created",
+  Started: "Mining started",
+  TapedOut: "Tapeout created",
   unknownEvent: "Wallet event",
+  tokenActivityUnavailable: "Token activity temporarily unavailable",
 } as const;
 export type Message = keyof typeof en;
 export type Language = "zh" | "en";
@@ -335,8 +346,19 @@ export const zh: Record<Message, string> = {
   Transfer: "转移",
   BEMSell: "卖出 BEM",
   BEMBuy: "买入 BEM",
+  BEMOut: "转出 BEM",
+  BEMTransfer: "BEM 转账",
+  BEMLiquidityAdd: "添加流动性",
+  BEMLiquidityRemove: "移除流动性",
+  BEMSwap: "BEM 兑换",
+  BEMBurn: "销毁 BEM",
+  BEMCollect: "领取 BEM",
   Commit: "提交承诺",
+  TapeOut: "创建流片",
+  Started: "开始挖矿",
+  TapedOut: "创建流片",
   unknownEvent: "钱包动态",
+  tokenActivityUnavailable: "代币动态暂不可用",
 };
 export const translator =
   (language: Language) =>

@@ -208,6 +208,24 @@ fn nonnegative(value: &Value, key: &str, required: bool) -> Result<(), String> {
         _ => Err(format!("Provider returned invalid {key}.")),
     }
 }
+/// v2 reports an unknown value as `null` instead of omitting it. For a metric we
+/// still want to render (as `—`, never as a fabricated `0`), treat `null` the
+/// same as absent rather than as a contract violation.
+fn missing_or(number: &Value, key: &str) -> bool {
+    number.get(key).is_none_or(Value::is_null)
+}
+/// True when `meta.source` actually carries something to read.
+///
+/// v2 does not populate `meta.source` on every endpoint: `/v2/tapeout/address`,
+/// `/v2/tapeout/market`, `/v2/tapeout/trades` and friends return `{}`, and the
+/// FabX endpoints return only `{"scope": "fabx:196"}`. Treating "present but
+/// empty" as authoritative would blank `observedAt`/`stale` for no reason, so
+/// the fallback below only adopts a source that has real provenance.
+fn has_provenance(source: &Value) -> bool {
+    ["observedBlock", "confirmedBlock", "generatedAt", "dataAgeSeconds", "stale"]
+        .iter()
+        .any(|key| source.get(key).is_some())
+}
 pub fn normalize(resource: &str, input: Value, wallet: Option<&str>) -> Result<Snapshot, String> {
     if resource.starts_with("fab_") {
         return crate::fab::normalize(resource, input, wallet);
@@ -248,6 +266,11 @@ pub fn normalize(resource: &str, input: Value, wallet: Option<&str>) -> Result<S
             }
             let mut v = project(data, &["summary", "assets", "circuits"]);
             v["activity"] = json!({"rows": data["activity"]["rows"].as_array().map(|r| r.iter().take(100).cloned().collect::<Vec<_>>()).unwrap_or_default()});
+            // v2 serves the token/trade ledger from a separate endpoint that
+            // provider::fetch folds in. `null` means the side request failed;
+            // an empty array means it succeeded and the wallet has no events.
+            v["tokenActivity"] = json!({"rows": data["tokenActivity"].as_array().map(|r| r.iter().take(100).cloned().collect::<Vec<_>>()).unwrap_or_default()});
+            v["tokenActivityUnavailable"] = json!(data.get("tokenActivity").is_none_or(Value::is_null));
             let points = data["hashrateHistory"]["points"]
                 .as_array()
                 .map(|r| r.iter().rev().take(2000).cloned().collect::<Vec<_>>())
@@ -272,20 +295,48 @@ pub fn normalize(resource: &str, input: Value, wallet: Option<&str>) -> Result<S
             json!({"market":market})
         }
         "network" => {
-            nonnegative(&data["hashrate"], "total", true)?;
-            json!({"hashrate":project(&data["hashrate"], &["total", "snapshot", "basis"]), "miningAddresses":project(&data["miningAddresses"], &["current", "definition"]),"networkHistory":crate::network_history::normalize_history(&data["hashrate"]["history"], Utc::now().timestamp())})
+            // The hashrate object itself is the contract: if the whole key is
+            // missing we are talking to the wrong endpoint (v2 serves hashrate
+            // from /v2/tapeout/charts, while /v2/tapeout/home only has `market`).
+            // Fail loudly so a mis-wired path is caught instead of rendering an
+            // empty network panel forever.
+            let hashrate = data
+                .get("hashrate")
+                .filter(|v| v.is_object())
+                .ok_or("Missing network hashrate.")?;
+            // But v2 reports *unknown values* as `null`. Tolerate that and keep
+            // the key at `null` so the UI renders `—`, never a fabricated `0`.
+            if !missing_or(hashrate, "total") {
+                nonnegative(hashrate, "total", true)?;
+            }
+            let mut hashrate_projection = project(hashrate, &["total", "snapshot", "basis"]);
+            if missing_or(hashrate, "total") {
+                hashrate_projection["total"] = Value::Null;
+            }
+            json!({"hashrate":hashrate_projection, "miningAddresses":project(&data["miningAddresses"], &["current", "definition"]),"networkHistory":crate::network_history::normalize_history(&hashrate["history"], Utc::now().timestamp())})
         }
         _ => return Err("Unsupported resource.".into()),
     };
     sanitize(&mut normalized, "");
+    // Provenance lives in `meta.source` on v2 (`{data, meta, requestId}`); v1 put
+    // the same keys at the top level. v2 is the target format, but several v2
+    // endpoints return an empty or provenance-free source, so only adopt one that
+    // actually carries provenance — otherwise the top-level shape (and
+    // hand-built fixtures) would be silently shadowed by a blank object.
+    let src = input
+        .get("meta")
+        .and_then(|meta| meta.get("source"))
+        .filter(|source| has_provenance(source))
+        .unwrap_or(&input);
     let observed_at = if resource == "market" {
+        // Still served inside `data` on v2; do not move this to `src`.
         data["market"]["observed_at"].as_str()
     } else {
-        input["generatedAt"].as_str()
+        src["generatedAt"].as_str()
     }
     .map(str::to_owned);
     let fetched = Utc::now().timestamp();
-    let age = input["dataAgeSeconds"]
+    let age = src["dataAgeSeconds"]
         .as_f64()
         .filter(|n| n.is_finite() && *n >= 0.0);
     let observed_at = if resource != "market" {
@@ -302,11 +353,11 @@ pub fn normalize(resource: &str, input: Value, wallet: Option<&str>) -> Result<S
         resource: resource.into(),
         wallet: wallet.map(str::to_lowercase),
         fetched_at: fetched,
-        generated_at: input["generatedAt"].as_str().map(str::to_owned),
+        generated_at: src["generatedAt"].as_str().map(str::to_owned),
         observed_at,
-        observed_block: input["observedBlock"].as_u64(),
-        confirmed_block: input["confirmedBlock"].as_u64(),
-        stale: input["stale"].as_bool().unwrap_or(false),
+        observed_block: src["observedBlock"].as_u64(),
+        confirmed_block: src["confirmedBlock"].as_u64(),
+        stale: src["stale"].as_bool().unwrap_or(false),
         data: normalized,
     })
 }

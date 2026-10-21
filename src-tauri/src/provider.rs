@@ -1,5 +1,5 @@
 use crate::domain::{normalize, Snapshot};
-use reqwest::{redirect::Policy, Client, StatusCode};
+use reqwest::{redirect::Policy, Client};
 use std::time::Duration;
 
 pub const ORIGIN: &str = "https://tapeoutscan.io";
@@ -9,6 +9,25 @@ pub struct FetchError {
     pub retry_after: Option<u64>,
     pub terminal: bool,
 }
+/// Percent-encode a value that goes into a URL query parameter.
+///
+/// The wallet already has to pass [`crate::domain::valid_wallet`] (`0x` + 40 hex
+/// digits), so this is defence in depth. It matters because the wallet moved from
+/// a path segment (v1 `/api/address/{wallet}`) into the query string
+/// (v2 `/v2/tapeout/address-detail?address={wallet}`): without encoding, a value
+/// containing `&` or `#` could splice extra parameters into the URL.
+fn encode_query(value: &str) -> String {
+    let mut encoded = String::with_capacity(value.len());
+    for byte in value.bytes() {
+        match byte {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'.' | b'_' | b'~' => {
+                encoded.push(byte as char)
+            }
+            _ => encoded.push_str(&format!("%{byte:02X}")),
+        }
+    }
+    encoded
+}
 pub fn client() -> Result<Client, reqwest::Error> {
     Client::builder()
         .redirect(Policy::none())
@@ -16,6 +35,26 @@ pub fn client() -> Result<Client, reqwest::Error> {
         .timeout(Duration::from_secs(30))
         .build()
 }
+
+/// The v2 request path for a resource.
+///
+/// Split out of the fetch so the migration's mapping is assertable by value
+/// instead of by grepping this file. TapeOutScan v2 only: the old `/api/*`
+/// endpoints are retired for new integrations, so there is no v1 fallback.
+pub fn resource_path(resource: &str, wallet: Option<&str>) -> Option<String> {
+    let wallet = encode_query(wallet.unwrap_or_default());
+    Some(match resource {
+        "address" => format!("/v2/tapeout/address-detail?address={wallet}"),
+        "token_activity" => format!("/v2/tapeout/address-token?address={wallet}&pageSize=20"),
+        "market" => "/v2/tapeout/home".into(),
+        "network" => "/v2/tapeout/charts".into(),
+        "fab_market" | "fab_network" => "/v2/fabx/home".into(),
+        "fab_address" => format!("/v2/fabx/address-miners?address={wallet}&pageSize=100"),
+        "fab_activity" => format!("/v2/fabx/address-activity?address={wallet}&pageSize=20"),
+        _ => return None,
+    })
+}
+
 async fn fetch_json(
     client: &Client,
     resource: &str,
@@ -26,21 +65,8 @@ async fn fetch_json(
         retry_after: None,
         terminal: false,
     };
-    let path = match resource {
-        "address" => format!("/api/address/{}", wallet.unwrap_or_default()),
-        "market" => "/api/home?view=market".into(),
-        "network" => "/api/home".into(),
-        "fab_market" | "fab_network" => "/api/fabx/home".into(),
-        "fab_address" => format!(
-            "/api/fabx/address?address={}&tab=miners&pageSize=100",
-            wallet.unwrap_or_default()
-        ),
-        "fab_activity" => format!(
-            "/api/fabx/address?address={}&tab=activity&pageSize=20",
-            wallet.unwrap_or_default()
-        ),
-        _ => return Err(fail("Unknown resource.".into())),
-    };
+    let path =
+        resource_path(resource, wallet).ok_or_else(|| fail("Unknown resource.".into()))?;
     let mut response = client
         .get(format!("{ORIGIN}{path}"))
         .timeout(Duration::from_secs(if resource == "network" {
@@ -66,11 +92,7 @@ async fn fetch_json(
         return Err(FetchError {
             message: format!("TapeOutScan returned HTTP {}.", response.status().as_u16()),
             retry_after,
-            terminal: response.status().is_redirection()
-                || matches!(
-                    response.status(),
-                    StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN | StatusCode::NOT_FOUND
-                ),
+            terminal: status_is_terminal(response.status().as_u16()),
         });
     }
     let limit = if resource == "network" {
@@ -103,9 +125,43 @@ async fn fetch_json(
     let json = serde_json::from_slice(&bytes).map_err(|_| FetchError {
         message: "Provider returned invalid JSON.".into(),
         retry_after: None,
-        terminal: true,
+        // Retryable: a truncated or half-flushed body is usually a transient
+        // upstream/proxy glitch, not a permanent contract break.
+        terminal: false,
     })?;
     Ok(json)
+}
+
+/// Status codes that will not heal on their own.
+///
+/// A redirect is permanent here because the client is built with
+/// `Policy::none()`: a 3xx is not followed, so retrying repeats it. Auth and
+/// not-found are caller/config problems. Everything else — 400 parameter
+/// mistakes we can fix in code, 408/429, and all 5xx — is retried with backoff.
+pub fn status_is_terminal(status: u16) -> bool {
+    matches!(status, 300..=399 | 401 | 403 | 404)
+}
+
+/// Whether an error message describes a condition that retrying cannot fix.
+///
+/// Exposed so the retry policy can be asserted without duplicating it in tests.
+///
+/// Only the two locally-determined cases qualify: the caller passed an invalid
+/// wallet, or the response exceeded a limit we configured ourselves.
+#[allow(dead_code)] // asserted by tests/provider_contract.rs
+pub fn permanent_failure(message: &str) -> bool {
+    message == "Invalid wallet address." || message == "Provider response exceeds the size limit."
+}
+
+/// Wrap a normalizer error. Contract mismatches are retried: v2 reports unknown
+/// values as `null` and an index can be mid-flight, so latching the job off
+/// until an app restart would be worse than a bounded backoff.
+pub fn retryable(message: String) -> FetchError {
+    FetchError {
+        message,
+        retry_after: None,
+        terminal: false,
+    }
 }
 
 pub async fn fetch(
@@ -138,11 +194,30 @@ pub async fn fetch(
             .map(|a| a["data"]["rows"].clone())
             .unwrap_or(serde_json::Value::Null);
     }
-    normalize(resource, input, wallet).map_err(|message| FetchError {
-        message,
-        retry_after: None,
-        terminal: true,
-    })
+    if resource == "address" && input["data"].is_object() {
+        // Same shape as the FabX fold above: `address-detail` gives circuit
+        // activity but not the token/trade ledger, which v2 serves separately
+        // from /v2/tapeout/address-token. Attach it only when the response is
+        // demonstrably for the wallet we asked about, and degrade to `null`
+        // (never fail the whole snapshot) if the extra call misbehaves.
+        let requested = wallet.unwrap_or_default();
+        let token = fetch_json(client, "token_activity", wallet)
+            .await
+            .ok()
+            .filter(|t| {
+                t["data"]["rows"].is_array()
+                    && t["data"]["address"]
+                        .as_str()
+                        .is_some_and(|address| address.eq_ignore_ascii_case(requested))
+            });
+        input["data"]["tokenActivity"] = token
+            .map(|t| t["data"]["rows"].clone())
+            .unwrap_or(serde_json::Value::Null);
+    }
+    // A normalize failure means the payload did not match the contract. That is
+    // usually transient (upstream indexing mid-flight) or a bug we want to keep
+    // retrying, never a reason to latch the job off until an app restart.
+    normalize(resource, input, wallet).map_err(retryable)
 }
 
 pub async fn fetch_fab_home(client: &Client) -> Result<serde_json::Value, FetchError> {
@@ -152,11 +227,7 @@ pub fn normalize_fab_home(
     resource: &str,
     input: serde_json::Value,
 ) -> Result<Snapshot, FetchError> {
-    normalize(resource, input, None).map_err(|message| FetchError {
-        message,
-        retry_after: None,
-        terminal: true,
-    })
+    normalize(resource, input, None).map_err(retryable)
 }
 
 #[cfg(test)]

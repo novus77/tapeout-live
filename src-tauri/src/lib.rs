@@ -3,7 +3,7 @@ pub mod appearance;
 pub mod domain;
 mod fab;
 mod network_history;
-mod provider;
+pub mod provider;
 pub mod runtime;
 mod settings_commit;
 mod shell;

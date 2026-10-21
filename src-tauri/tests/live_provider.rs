@@ -9,9 +9,15 @@ async fn live_tapeoutscan_contracts() {
         .build()
         .unwrap();
     let wallet = "0x8baf8c4f3ae2fa5294a3cb124bb88e1a5dfe4d67";
+    // v2 paths. `address` must be `address-detail`: the bare `address` endpoint
+    // silently omits `activity` and `hashrateHistory`.
     for (resource, path) in [
-        ("market", "/api/home?view=market".to_owned()),
-        ("address", format!("/api/address/{wallet}")),
+        ("market", "/v2/tapeout/home".to_owned()),
+        (
+            "address",
+            format!("/v2/tapeout/address-detail?address={wallet}"),
+        ),
+        ("network", "/v2/tapeout/charts".to_owned()),
     ] {
         let payload: Value = client
             .get(format!("https://tapeoutscan.io{path}"))
